@@ -10,8 +10,7 @@ test average of only the strongest point
 *Tested: only strong point in images // CODE3
 *Tested: coefficient : in display change grad view to 0
 *Teting : avg lap distance CODE 5: Problem: not always true, sometime  strong region is included in another strong region. FAIL
-*Done: Replace copy with reference: reduce time
-*Doing: separate tos to tos, binary, textbox
+
 */
 
 #ifndef frontPropagate_include
@@ -57,8 +56,7 @@ namespace mln{
   }
   
   namespace tos{
-
-	//vector<point2d> debug;
+    //vector<point2d> debug;
     struct boundingBox{ //contain the information for the Bounding Box of each element and 
       box2d  box;
       point2d center;
@@ -70,14 +68,14 @@ namespace mln{
     
     struct tos
     {
-      vector<unsigned int> parent_array,area; //a table of parent, area of each composant
+      vector<unsigned int> parent_array,area,score; //a table of parent, area and score(for binarization) of each composant
       vector<point2d> startPoint; //contain all point that belongs to the border and all start point of regions
 	  vector< vector<point2d> > border,removedBorder,removedLap,removedRatio;
       vector<float> color;// average value of pixel inside a region
 	  vector<unsigned> contourSize;
 	  vector<float> lambda;
 	  vector<float> lap;// average value of pixel inside a region
-	  vector<float> removedLapTemp; //for debug value of average lap at that region
+	  vector<float> removedLapTemp; //for debug
       vector<boundingBox> boxes;// bounding box of each region except the root
       vector<box2d> boundingBoxes;// the bounding box of posible grouped text 
       unsigned nLabels;
@@ -89,6 +87,7 @@ namespace mln{
 	startPoint.reserve(reservedSize);
 	border.reserve(reservedSize);
 	color.reserve(reservedSize);
+	score.reserve(reservedSize);
 	boxes.reserve(reservedSize);
 	boundingBoxes.reserve(reservedSize/2);
 	lap.reserve(reservedSize);
@@ -97,6 +96,42 @@ namespace mln{
       //methode
       unsigned int getParentIndex(unsigned int i) {return parent_array[i]-1;} // we start ticket from 1, 0 is for did not processed
       unsigned int getGrandParentIndex(unsigned int i) {return getParentIndex(getParentIndex(i));} //value in parentArray is parent ticket
+
+      
+      template <typename N>  
+      bool isEquivalent(N number1,N number2,unsigned thresHold){
+	/*
+	 *Euclide distance between 2 point, compare with a thresHold
+	 */
+	return(number1-number2)*(number1-number2) <thresHold*thresHold;
+      }
+	  
+      template <typename N>  
+      bool isSimilar(N number1,N number2,float thresHold){
+	/*
+	 *similarity ratio between 2 number min(n1,n2)/max(n1,n2), compare with a thresHold 
+	 */	
+
+	return number1<number2?(number1/float(number2)>thresHold):(number2/float(number1)>thresHold);
+      }    
+      
+      void scoring(){
+	/*
+	 *Use for smart binarisation. IF a node has similar gray level with its grand parrent,
+	 *it contributes 1 point to its Grand parent, if not it contributes 1 point to its parent
+	 */	
+
+	score = vector<unsigned>(nLabels,0);
+	
+	for(int i =0;i<nLabels;i++)
+	  {
+	    if(isEquivalent(color[i],color[getGrandParentIndex(i)],params::score))
+	      score[getGrandParentIndex(i)] +=1;
+	    else
+	      score[getParentIndex(i)] +=1;
+	  }
+      }
+      
       unsigned getSubnodeArea(unsigned index){
 	/*
 	 *Use for smart binarisation. get a sum of all subnode area
@@ -107,63 +142,30 @@ namespace mln{
 	  if(index and parent_array[i]==index+1)
 	    output+= area[i];
 	return output;
-      }	      
+      }
+	  
+	bool checkCharacter(int i, int node)
+	{
+	  /*
+	   *Check if 2 point are close enought
+	   */
+	  if(boxes[i].center[1]<boxes[node].center[1])
+		if(boxes[i].center[1]+boxes[i].width/2 + boxes[i].height*2> boxes[node].center[1]-boxes[node].width/2)
+	  //if(isEquivalent(boxes[i].center[1],boxes[node].center[1],boxes[node].height*2))
+		  if(isEquivalent(boxes[i].center[0],boxes[node].center[0],boxes[node].height/2)) //no too different verticalement
+			if(isSimilar(boxes[i].height,boxes[node].height,params::textSize)) //equivalent height
+			  return true;
+	  if(boxes[i].center[1]>boxes[node].center[1])
+		if(boxes[i].center[1]-boxes[i].width/2-boxes[i].height*2 < boxes[node].center[1]+boxes[node].width/2)
+	  //if(isEquivalent(boxes[i].center[1],boxes[node].center[1],boxes[node].height*2))
+		  if(isEquivalent(boxes[i].center[0],boxes[node].center[0],boxes[node].height/2))
+			if(isSimilar(boxes[i].height,boxes[node].height,params::textSize))
+			  return true;			
+	  return false;
+	}
+
     };
 
-    namespace util{
-      template <typename N>  
-      bool isEquivalent(N number1,N number2,unsigned thresHold){
-	/*
-	 *Euclide distance between 2 point, compare with a thresHold
-	 */
-	return(number1-number2)*(number1-number2) <thresHold*thresHold;
-      }	  
-	  template <typename N>  
-	  bool isSimilar(N number1,N number2,float thresHold){
-	  /*
-	   *similarity ratio between 2 number min(n1,n2)/max(n1,n2), compare with a thresHold 
-	   */	
-  
-	  return number1<number2?(number1/float(number2)>thresHold):(number2/float(number1)>thresHold);
-		}
-	  bool checkCharacter(const tos& tree,int i, int node)
-	  {
-		/*
-		 *Check if 2 point are close enought
-		 */
-		if(tree.boxes[i].center[1]<tree.boxes[node].center[1])
-		  if(tree.boxes[i].center[1]+tree.boxes[i].width/2 + tree.boxes[i].height*2> tree.boxes[node].center[1]-tree.boxes[node].width/2)
-		//if(isEquivalent(boxes[i].center[1],boxes[node].center[1],boxes[node].height*2))
-			if(isEquivalent(tree.boxes[i].center[0],tree.boxes[node].center[0],tree.boxes[node].height/2)) //no too different verticalement
-			  if(isSimilar(tree.boxes[i].height,tree.boxes[node].height,params::textSize)) //equivalent height
-				return true;
-		if(tree.boxes[i].center[1]>tree.boxes[node].center[1])
-		  if(tree.boxes[i].center[1]-tree.boxes[i].width/2-tree.boxes[i].height*2 < tree.boxes[node].center[1]+tree.boxes[node].width/2)
-		//if(isEquivalent(boxes[i].center[1],boxes[node].center[1],boxes[node].height*2))
-			if(isEquivalent(tree.boxes[i].center[0],tree.boxes[node].center[0],tree.boxes[node].height/2))
-			  if(isSimilar(tree.boxes[i].height,tree.boxes[node].height,params::textSize))
-				return true;			
-		return false;
-	  }
-	  
-      vector<unsigned int> scoring(tos& tree){
-	  /*
-	   *Use for smart binarisation. IF a node has similar gray level with its grand parrent,
-	   *it contributes 1 point to its Grand parent, if not it contributes 1 point to its parent
-	   */	
-  
-	  vector<unsigned int> score = vector<unsigned>(tree.nLabels,0);
-	  
-	  for(int i =0;i<tree.nLabels;i++)
-		{
-		  if(isEquivalent(tree.color[i],tree.color[tree.getGrandParentIndex(i)],params::score))
-			score[tree.getGrandParentIndex(i)] +=1;
-		  else
-			score[tree.getParentIndex(i)] +=1;
-		}
-	  return score;
-      }	  
-	}
 	namespace conversion{
 	  const double rY = 0.212655;
 	  const double gY = 0.715158;
@@ -211,7 +213,7 @@ namespace mln{
 	namespace internal
     {
       template <typename I, typename V>
-      float followEdge(const point2d& p,const image2d<unsigned int>& output,const image2d<I>& gradient,const image2d< V >& laplacian,vector<point2d>& bord,
+      float followEdge(const point2d p,const image2d<unsigned int> output,const image2d<I> gradient,const image2d< V > laplacian,vector<point2d>& bord,
 		       unsigned& count,float& lap) // CODE1 last param lap
     {
 	/*
@@ -433,10 +435,8 @@ namespace mln{
 		tree.lambda.push_back(fidelity[i]*1./tree.contourSize[i]);
 	  }
 	  float max = *std::max_element(tree.lambda.begin(),tree.lambda.end())/255.;
-	  cout<<"Max "<<max<<endl;
       for(int i =0;i<level-1;i++) //return the average gray level
 	  {
-		std::cout<<tree.lambda[i]<<endl;
 		tree.lambda[i]=tree.lambda[i]/max;
 	  }
       return output;
@@ -446,13 +446,13 @@ namespace mln{
     //*-------------------------------------------------------
     //*-------------------------------------------------------
     //*-------------------------------------------------------
-    image2d<bool> binarization(const image2d<unsigned int>& labeling,tos& tree,int thresHold)
+    image2d<bool> binarization(image2d<unsigned int> labeling,tos& tree,int thresHold)
     {
-      vector<unsigned int> score = util::scoring(tree);//a table of score(for binarization) of each composant
-      vector<unsigned> binary(score.size(),0);
+      tree.scoring();
+      vector<unsigned> binary(tree.score.size(),0);
       //decide which binary value is
-      for(int i =0;i<score.size();i++)
-	if(score[i]>thresHold and tree.area[i]>=tree.getSubnodeArea(i))
+      for(int i =0;i<tree.score.size();i++)
+	if(tree.score[i]>thresHold and tree.area[i]>=tree.getSubnodeArea(i))
 	  //high score and own area higher than sub area
 	  binary[i]=1;
 	else	
@@ -474,7 +474,7 @@ namespace mln{
     //*-------------------------------------------------------
     namespace internal_old
     {
-      unsigned getNearestNeighbor(const image2d<unsigned>& image,const tos& tree,unsigned i,const dpoint2d& direction)
+      unsigned getNearestNeighbor(image2d<unsigned> image,tos tree,unsigned i,dpoint2d direction)
       {
 	point2d p =tree.boxes[i].center;
 	for(unsigned j =0;i<tree.boxes[j].width/2;j++)
@@ -487,7 +487,7 @@ namespace mln{
 	    if(not (image.domain().has(p))) break; //out of domain--> end
 	    if(image(p)== current) continue; // still in the same region, moving on
 	    if(image(p)!= 1 and (tree.parent_array[i] == tree.parent_array[image(p)-1]) and i!=image(p)-1
-	       and util::isSimilar(tree.boxes[i].height,tree.boxes[image(p)-1].height,params::textSize) )
+	       and tree.isSimilar(tree.boxes[i].height,tree.boxes[image(p)-1].height,params::textSize) )
 	      return image(p);// found a new ticket which is brother and have similar size
 	    else
 	      current = image(p); // new ticket but not a brother or having similar size
@@ -495,7 +495,7 @@ namespace mln{
 	return 0; // found no brother in range
       }    
   
-      void neighborSearch(const image2d<unsigned>& image, const tos& tree, vector<unsigned>& left, vector<unsigned>& right)
+      void neighborSearch(image2d<unsigned> image,tos tree,vector<unsigned>& left, vector<unsigned>& right)
       {
 	left  = vector<unsigned>(tree.nLabels-1,0);
 	right = vector<unsigned>(tree.nLabels-1,0);
@@ -506,7 +506,7 @@ namespace mln{
 	  }
       }
   
-      box2d getBoundingBox(const box2d& B1,const box2d& B2,const box2d& B3)
+      box2d getBoundingBox(box2d B1,box2d B2,box2d B3)
       {
 	return make::box2d(min(min(B1.pmin()[0],B2.pmin()[0]),B3.pmin()[0]),
 			   min(min(B1.pmin()[1],B2.pmin()[1]),B3.pmin()[1]),
@@ -514,8 +514,8 @@ namespace mln{
 			   max(max(B1.pmax()[1],B2.pmax()[1]),B3.pmax()[1]));
       }
 	  
-      bool joinRegionsOld(const tos& tree, vector<bool>& queue,box2d& box,
-			  unsigned node,const vector<unsigned>& left, const vector<unsigned>& right,bool direction)
+      bool joinRegionsOld(tos tree, vector<bool>& queue,box2d& box,
+			  unsigned node,vector<unsigned> left, vector<unsigned> right,bool direction)
       {
 	bool found=false;
 	cout<<node<<" "<<(right[node] and node+2 == left[right[node]-2])<<" "<<(left[node] and node+2 == right[left[node]-2])<<" "; 
@@ -538,8 +538,8 @@ namespace mln{
 	return found;
       }
   
-      bool joinRegions(const tos& tree, vector<bool>& queue,box2d& box,
-		       unsigned node,const vector<unsigned>& left, const vector<unsigned>& right,int oldNode)
+      bool joinRegions(tos tree, vector<bool>& queue,box2d& box,
+		       unsigned node,vector<unsigned> left, vector<unsigned> right,int oldNode)
       {
 	bool found=false;
 	if (right[node] and right[node]!=oldNode and node+2 == left[right[node]-2])
@@ -559,7 +559,7 @@ namespace mln{
 	return found;
       }  
 	 
-      vector<box2d> getRegions(const image2d<unsigned>& image,const tos& tree)
+      vector<box2d> getRegions(image2d<unsigned> image,tos tree)
       {
 	vector<unsigned> left,right;
 	vector<bool> queue(tree.nLabels-1,true);
@@ -586,7 +586,7 @@ namespace mln{
     //*-------------------------------------------------------
     //*-------------------------------------------------------
     //*-------------------------------------------------------     
-    box2d getBoundingBox(const box2d& B1,const box2d& B2,const box2d& B3)
+    box2d getBoundingBox(box2d B1,box2d B2,box2d B3)
     {
       /*
        *return the bounding box of 3 boxes
@@ -598,7 +598,7 @@ namespace mln{
     }
     namespace internal
     {
-      unsigned getNearestNeighbor(const image2d<unsigned>& image,const tos& tree,unsigned i, point2d p,const dpoint2d& direction)
+      unsigned getNearestNeighbor(image2d<unsigned> image,tos tree,unsigned i, point2d p,dpoint2d direction)
       {
 	/*
 	 *return the nearest neighbor of a composant
@@ -617,7 +617,7 @@ namespace mln{
 	    if(not (image.domain().has(p))) break; //out of domain--> end		
 	    if(image(p)== current) continue; // still in the same region, moving on		
 	    if(image(p)!= 1 and (tree.parent_array[i] == tree.parent_array[image(p)-1]) and i!=image(p)-1
-	       and util::isSimilar(tree.boxes[i].height,tree.boxes[image(p)-1].height,params::textSize) )
+	       and tree.isSimilar(tree.boxes[i].height,tree.boxes[image(p)-1].height,params::textSize) )
 	      //not the first region, have same parent, have different ticket *fixe?(could remove?) and have
 	      //similar size
 	      return image(p);// found a new ticket which is brother and have similar size
@@ -646,7 +646,7 @@ namespace mln{
       };
 	  
       inline
-      void neighborSearch(const image2d<unsigned>& image,const tos& tree, neighbors& ngh)
+      void neighborSearch(image2d<unsigned> image,tos tree, neighbors& ngh)
       {
 	/*
 	 *Search for neighbor of all component
@@ -740,7 +740,7 @@ namespace mln{
 	return false;
       }
 	  
-      unsigned joinRegionsThree(const tos& tree, vector<bool>& queue,box2d& box,
+      unsigned joinRegionsThree(tos tree, vector<bool>& queue,box2d& box,
 		       unsigned node,neighbors ngh,int oldNode)
       {
 	/*
@@ -769,7 +769,7 @@ namespace mln{
 	return count;
       }
 	  
-      unsigned joinRegionsRange(const tos& tree, vector<bool>& queue,box2d& box,
+      unsigned joinRegionsRange(tos tree, vector<bool>& queue,box2d& box,
 		       unsigned node,int oldNode)
       {
 		/*
@@ -791,7 +791,7 @@ namespace mln{
 			  if(tree.parent_array[i]!=tree.parent_array[node])
 				continue; 
 		//check distance
-			  if(util::checkCharacter(tree,i,node) and util::checkCharacter(tree,node,i))
+			  if(tree.checkCharacter(i,node) and tree.checkCharacter(node,i))
 		//check the laplacian
 			  //if(tree.isEquivalent(tree.lap[i],tree.lap[node],params::laplacianThreshold*0.5))
 			  {
@@ -810,7 +810,7 @@ namespace mln{
     }//end of internal
 		
     namespace three{//search neighbors using 3 line
-	  vector<box2d> getRegions(const image2d<unsigned>& image,const tos& tree)
+	  vector<box2d> getRegions(image2d<unsigned> image,tos tree)
 	  {
 		//to check if component has been proceed
 		vector<bool> queue(tree.nLabels-1,true);
@@ -833,7 +833,7 @@ namespace mln{
 	}
 	
 	namespace distance{//search for neighbors using distance calculations
-	  vector<box2d> getRegions(const image2d<unsigned>& image,tos& tree)
+	  vector<box2d> getRegions(image2d<unsigned> image,tos& tree)
 	  {
 		//tempo box
 		vector<box2d> boxes;
@@ -903,7 +903,7 @@ namespace mln{
 	}
 	
 	template<typename I>
-	I normalisation(const I& image)
+	I normalisation(I image)
 	{
 	  mln_piter_(box2d) p(image.domain());
       I output(image.domain());
