@@ -72,7 +72,7 @@ namespace mln{
     {
       vector<unsigned int> parent_array,area; //a table of parent, area of each composant
       vector<point2d> startPoint; //contain all point that belongs to the border and all start point of regions
-	  vector< vector<point2d> > border,removedBorder,removedLap,removedRatio;
+	  vector< vector<point2d> > border,removedBorder,removedLap,removedRatio,removedBorderGrad,removedBorderContour;
       vector<float> color;// average value of pixel inside a region
 	  vector<unsigned> contourSize;
 	  vector<float> lambda;
@@ -310,6 +310,10 @@ namespace mln{
 		current=output(p+dpoint2d(-1,-1)); //merge with upper level
 		bounding_box_count_flag =false;
 		tree.removedBorder.push_back(bord);
+		if(grad <gradThresHold)
+		  tree.removedBorderGrad.push_back(bord);
+		else if(contourSize<params::area)
+		  tree.removedBorderContour.push_back(bord);
 	      }
 	  }
 	else

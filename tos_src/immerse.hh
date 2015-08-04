@@ -10,9 +10,6 @@
 # include <mln/data/paste.hh>
 # include <mln/draw/box.hh>
 
-# include "range.hh"
-# include "faces.hh"
-
 
 
 namespace mln
@@ -84,57 +81,6 @@ namespace mln
 
 
 
-    // subdivision
-
-    template <typename I >
-    image2d< I >
-    subdivide(const image2d< I >& input)
-    {
-      box2d
-	b = input.domain(),
-	bb(2 * b.pmin(), 2 * b.pmax());
-      image2d< I > output(bb);
-
-      //   0 1
-      // 0 a a
-      // 1 a a
-
-      // ->
-
-      //   0 1 2
-      // 0 a b a
-      // 1 c d c
-      // 2 a b a
-
-      point2d p;
-      short& row = p.row();
-      short& col = p.col();
-
-      for (row = bb.pmin().row(); row <= bb.pmax().row(); ++row)
-	for (col = bb.pmin().col(); col <= bb.pmax().col(); ++col)
-
-	  if (p.row() % 2 == 0 and p.col() % 2 == 0)
-	    // case a
-	    output(p) = input.at_(row / 2, col / 2);
-	  else if (p.row() % 2 == 0)
-	    // case b
-	    output(p) = std::max(input.at_(row / 2, (col - 1) / 2),
-				 input.at_(row / 2, (col + 1) / 2));
-	  else if (p.col() % 2 == 0)
-	    // case c
-	    output(p) = std::max(input.at_((row - 1) / 2, col / 2),
-				 input.at_((row + 1) / 2, col / 2));
-	  else
-	    // case d
-	    output(p) = std::max(std::max(input.at_((row - 1) / 2, (col - 1) / 2),
-					  input.at_((row - 1) / 2, (col + 1) / 2)),
-				 std::max(input.at_((row + 1) / 2, (col - 1) / 2),
-					  input.at_((row + 1) / 2, (col + 1) / 2)));
-
-      return output;
-    }
-
-
     template <typename I >
     image2d< I >
     subdivide2(const image2d< I >& input)
@@ -179,81 +125,6 @@ namespace mln
       return output;
     }    
 
-
-    // addition of k-faces
-
-    template <typename I >
-    image2d< range<I> >
-    add_kfaces(const image2d<I>& input)
-    {
-      box2d
-	b = input.domain(),
-	bb(2 * b.pmin() - dpoint2d(1,1),
-	   2 * b.pmax() + dpoint2d(1,1));
-
-      //   0 1
-      // 0 a b
-      // 1 c d
-
-      // ->
-
-      //  -1 0 1 2 3
-      //-1 + - + - +
-      // 0 | a | b |
-      // 1 + - + - +
-      // 2 | c | d |
-      // 3 + - + - +
-
-      typedef range<I> R;
-      image2d<R> output(bb);
-      I min, max;
-
-      mln_piter(box2d) p(bb);
-      mln_niter(neighb2d) n(c8(), p);
-      for_all(p)
-	if (face_dim(p) == 2)
-	  output(p) = input.at_(p.row() / 2, p.col() / 2);
-	else
-	  {
-	    min = 255;
-	    max = 0;
-	    for_all(n)
-	      if (bb.has(n) and face_dim(n) == 2)
-	      {
-		I v = input.at_(n.row() / 2, n.col() / 2);
-		if (v < min)
-		  min = v;
-		if (v > max)
-		  max = v;
-	      }
-	    output(p) = R(min, max);
-	  }
-
-      return output;
-    }
-
-    template <typename I >
-    image2d< range<I> >
-    convert_to_range(const image2d<I>& input)
-    {
-      typedef range<I> R;
-      image2d<R> output(input.domain());
-      mln_piter(box2d) p(input.domain());
-      for_all(p)
-	output(p) = input(p);
-
-      return output;
-    }
-
-    // immersion
-    template <typename I >
-    image2d< range<I> >
-    immerse(const image2d<I>& input)
-    {
-      image2d<I> temp = add_border(input);
-      temp = subdivide(temp);
-      return add_kfaces(temp);
-    }
 
     template <typename I >
     image2d< I >
