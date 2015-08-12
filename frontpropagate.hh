@@ -39,26 +39,26 @@ namespace mln{
     const float textSize = 0.5; //ratio of similarity between 2 letters
     const unsigned boxSize = 50; //minimum area of bounding box to be kept (width * height)
     const unsigned area = 30;// perimeter minimum of a component to be kept old =30
-	float laplacianThreshold = 50; //thresHold of 25% strongest point of laplacian of a region
+    float laplacianThreshold = 50; //thresHold of 25% strongest point of laplacian of a region
 	
-	const unsigned widthHeightRatio = 10;
-	const unsigned heightWidthRatio = 5;
-	const unsigned minWidth = 4;
-	const unsigned minHeight =6;
+    const unsigned widthHeightRatio = 10;
+    const unsigned heightWidthRatio = 5;
+    const unsigned minWidth = 4;
+    const unsigned minHeight =6;
 	
     //these 2 values are used in the searching for average edge gradient.
     //It search for haft a circle clockwise and then haft a circle counter-clockwise for
     //next possible point.
     const dpoint2d dp[8] = {dpoint2d(-1,1),dpoint2d(0,1), dpoint2d(1,1),dpoint2d(1,0),
 			    dpoint2d(1,-1),dpoint2d(0,-1),dpoint2d(-1,-1),dpoint2d(-1,0)};
-	//const dpoint2d dpmax[8] = {dpoint2d(1,1),dpoint2d(1,0), dpoint2d(1,-1),dpoint2d(0,-1),
-	//		    dpoint2d(-1,-1),dpoint2d(-1,0),dpoint2d(-1,1),dpoint2d(0,1)};
+    //const dpoint2d dpmax[8] = {dpoint2d(1,1),dpoint2d(1,0), dpoint2d(1,-1),dpoint2d(0,-1),
+    //		    dpoint2d(-1,-1),dpoint2d(-1,0),dpoint2d(-1,1),dpoint2d(0,1)};
     const unsigned iter[8] = {0,1,1,1,4,7,7,7};
   }
   
   namespace tos{
 
-	//vector<point2d> debug;
+    //vector<point2d> debug;
     struct boundingBox{ //contain the information for the Bounding Box of each element and 
       box2d  box;
       point2d center;
@@ -72,12 +72,12 @@ namespace mln{
     {
       vector<unsigned int> parent_array,area; //a table of parent, area of each composant
       vector<point2d> startPoint; //contain all point that belongs to the border and all start point of regions
-	  vector< vector<point2d> > border,removedBorder,removedLap,removedRatio;
+      vector< vector<point2d> > border,removedBorder,removedLap,removedRatio;
       vector<float> color;// average value of pixel inside a region
-	  vector<unsigned> contourSize;
-	  vector<float> lambda;
-	  vector<float> lap;// average value of pixel inside a region
-	  vector<float> removedLapTemp; //for debug value of average lap at that region
+      vector<unsigned> contourSize;
+      vector<float> lambda;
+      vector<float> lap;// average value of pixel inside a region
+      vector<float> removedLapTemp; //for debug value of average lap at that region
       vector<boundingBox> boxes;// bounding box of each region except the root
       vector<box2d> boundingBoxes;// the bounding box of posible grouped text 
       unsigned nLabels;
@@ -118,102 +118,102 @@ namespace mln{
 	 */
 	return(number1-number2)*(number1-number2) <thresHold*thresHold;
       }	  
-	  template <typename N>  
-	  bool isSimilar(N number1,N number2,float thresHold){
-	  /*
-	   *similarity ratio between 2 number min(n1,n2)/max(n1,n2), compare with a thresHold 
-	   */	
+      template <typename N>  
+      bool isSimilar(N number1,N number2,float thresHold){
+	/*
+	 *similarity ratio between 2 number min(n1,n2)/max(n1,n2), compare with a thresHold 
+	 */	
   
-	  return number1<number2?(number1/float(number2)>thresHold):(number2/float(number1)>thresHold);
-		}
-	  bool checkCharacter(const tos& tree,int i, int node)
-	  {
-		/*
-		 *Check if 2 point are close enought
-		 */
-		if(tree.boxes[i].center[1]<tree.boxes[node].center[1])
-		  if(tree.boxes[i].center[1]+tree.boxes[i].width/2 + tree.boxes[i].height*2> tree.boxes[node].center[1]-tree.boxes[node].width/2)
-		//if(isEquivalent(boxes[i].center[1],boxes[node].center[1],boxes[node].height*2))
-			if(isEquivalent(tree.boxes[i].center[0],tree.boxes[node].center[0],tree.boxes[node].height/2)) //no too different verticalement
-			  if(isSimilar(tree.boxes[i].height,tree.boxes[node].height,params::textSize)) //equivalent height
-				return true;
-		if(tree.boxes[i].center[1]>tree.boxes[node].center[1])
-		  if(tree.boxes[i].center[1]-tree.boxes[i].width/2-tree.boxes[i].height*2 < tree.boxes[node].center[1]+tree.boxes[node].width/2)
-		//if(isEquivalent(boxes[i].center[1],boxes[node].center[1],boxes[node].height*2))
-			if(isEquivalent(tree.boxes[i].center[0],tree.boxes[node].center[0],tree.boxes[node].height/2))
-			  if(isSimilar(tree.boxes[i].height,tree.boxes[node].height,params::textSize))
-				return true;			
-		return false;
-	  }
+	return number1<number2?(number1/float(number2)>thresHold):(number2/float(number1)>thresHold);
+      }
+      bool checkCharacter(const tos& tree,int i, int node)
+      {
+	/*
+	 *Check if 2 point are close enought
+	 */
+	if(tree.boxes[i].center[1]<tree.boxes[node].center[1])
+	  if(tree.boxes[i].center[1]+tree.boxes[i].width/2 + tree.boxes[i].height*2> tree.boxes[node].center[1]-tree.boxes[node].width/2)
+	    //if(isEquivalent(boxes[i].center[1],boxes[node].center[1],boxes[node].height*2))
+	    if(isEquivalent(tree.boxes[i].center[0],tree.boxes[node].center[0],tree.boxes[node].height/2)) //no too different verticalement
+	      if(isSimilar(tree.boxes[i].height,tree.boxes[node].height,params::textSize)) //equivalent height
+		return true;
+	if(tree.boxes[i].center[1]>tree.boxes[node].center[1])
+	  if(tree.boxes[i].center[1]-tree.boxes[i].width/2-tree.boxes[i].height*2 < tree.boxes[node].center[1]+tree.boxes[node].width/2)
+	    //if(isEquivalent(boxes[i].center[1],boxes[node].center[1],boxes[node].height*2))
+	    if(isEquivalent(tree.boxes[i].center[0],tree.boxes[node].center[0],tree.boxes[node].height/2))
+	      if(isSimilar(tree.boxes[i].height,tree.boxes[node].height,params::textSize))
+		return true;			
+	return false;
+      }
 	  
       vector<unsigned int> scoring(tos& tree){
-	  /*
-	   *Use for smart binarisation. IF a node has similar gray level with its grand parrent,
-	   *it contributes 1 point to its Grand parent, if not it contributes 1 point to its parent
-	   */	
+	/*
+	 *Use for smart binarisation. IF a node has similar gray level with its grand parrent,
+	 *it contributes 1 point to its Grand parent, if not it contributes 1 point to its parent
+	 */	
   
-	  vector<unsigned int> score = vector<unsigned>(tree.nLabels,0);
+	vector<unsigned int> score = vector<unsigned>(tree.nLabels,0);
 	  
-	  for(int i =0;i<tree.nLabels;i++)
-		{
-		  if(isEquivalent(tree.color[i],tree.color[tree.getGrandParentIndex(i)],params::score))
-			score[tree.getGrandParentIndex(i)] +=1;
-		  else
-			score[tree.getParentIndex(i)] +=1;
-		}
-	  return score;
+	for(int i =0;i<tree.nLabels;i++)
+	  {
+	    if(isEquivalent(tree.color[i],tree.color[tree.getGrandParentIndex(i)],params::score))
+	      score[tree.getGrandParentIndex(i)] +=1;
+	    else
+	      score[tree.getParentIndex(i)] +=1;
+	  }
+	return score;
       }	  
-	}
-	namespace conversion{
-	  const double rY = 0.212655;
-	  const double gY = 0.715158;
-	  const double bY = 0.072187;
+    }
+    namespace conversion{
+      const double rY = 0.212655;
+      const double gY = 0.715158;
+      const double bY = 0.072187;
 	  
-	  // Inverse of sRGB "gamma" function. (approx 2.2)
-	  double inv_gam_sRGB(value::int_u8 ic) {
-		  double c = ic/255.0;
-		  if ( c <= 0.04045 )
-			  return c/12.92;
-		  else 
-			  return pow(((c+0.055)/(1.055)),2.4);
-	  }
+      // Inverse of sRGB "gamma" function. (approx 2.2)
+      double inv_gam_sRGB(value::int_u8 ic) {
+	double c = ic/255.0;
+	if ( c <= 0.04045 )
+	  return c/12.92;
+	else 
+	  return pow(((c+0.055)/(1.055)),2.4);
+      }
 	  
-	  // sRGB "gamma" function (approx 2.2)
-	  value::int_u8 gam_sRGB(double v) {
-		  if(v<=0.0031308)
-			  v *= 12.92;
-		  else 
-			  v = 1.055*pow(v,1.0/2.4)-0.055;
-		  return value::int_u8(v*255+.5);
-	  }
+      // sRGB "gamma" function (approx 2.2)
+      value::int_u8 gam_sRGB(double v) {
+	if(v<=0.0031308)
+	  v *= 12.92;
+	else 
+	  v = 1.055*pow(v,1.0/2.4)-0.055;
+	return value::int_u8(v*255+.5);
+      }
 	  
-	  // GRAY VALUE ("brightness")
-	  value::int_u8 gray(value::int_u8 r, value::int_u8 g, value::int_u8 b) {
-		  return gam_sRGB(
-				  rY*inv_gam_sRGB(r) +
-				  gY*inv_gam_sRGB(g) +
-				  bY*inv_gam_sRGB(b)
-		  );
-	  }
-	}
+      // GRAY VALUE ("brightness")
+      value::int_u8 gray(value::int_u8 r, value::int_u8 g, value::int_u8 b) {
+	return gam_sRGB(
+			rY*inv_gam_sRGB(r) +
+			gY*inv_gam_sRGB(g) +
+			bY*inv_gam_sRGB(b)
+			);
+      }
+    }
 	
     image2d<value::int_u8> transformBnW(const image2d<value::rgb8> input)
-	{
-	  image2d<value::int_u8> output(input.domain());
+    {
+      image2d<value::int_u8> output(input.domain());
       mln_piter_(box2d) p(input.domain());
       for_all(p)
-		output(p) = 0.2126*input(p).red() + 0.0722*input(p).blue() + 0.7152*input(p).green();
-		//output(p) = 0.299*input(p).red() + 0.114*input(p).blue() + 0.587*input(p).green();
-		//output(p) =conversion::gray(input(p).red(),input(p).blue(),input(p).green());
-	  return output;
-	}
+	output(p) = 0.2126*input(p).red() + 0.0722*input(p).blue() + 0.7152*input(p).green();
+      //output(p) = 0.299*input(p).red() + 0.114*input(p).blue() + 0.587*input(p).green();
+      //output(p) =conversion::gray(input(p).red(),input(p).blue(),input(p).green());
+      return output;
+    }
 	
-	namespace internal
+    namespace internal
     {
       template <typename I, typename V>
       float followEdge(const point2d& p,const image2d<unsigned int>& output,const image2d<I>& gradient,const image2d< V >& laplacian,vector<point2d>& bord,
 		       unsigned& count,float& lap) // CODE1 last param lap
-    {
+      {
 	/*
 	 *Follow the contour of component and return the gradient moyenne
 	 *at these points and number of point in the edge
@@ -232,14 +232,14 @@ namespace mln{
 		if ( output(np + params::dp[direction]) and output(np + params::dp[(direction+1)%8]) == 0
 		     and output.domain().has(np + params::dp[(direction+1)%8]))
 		  {//if that point is checked and its next point on the left isn't, it is our next point
-			lap += laplacian(np + params::dp[(direction+1)%8]); // CODE0
+		    lap += laplacian(np + params::dp[(direction+1)%8]); // CODE0
 		    np=np+params::dp[direction];// move to next point
 		    bord.push_back(np);//add next point to return vector
 		    grad+=gradient(np);//increase gradient
 		    count++;//increase counter
 			
-			//lapPoints.push_back(laplacian(np)); // for sorted vector of laplacian count % CODE1
-			//lapPoints.push_back(laplacian(np + params::dp[(direction+1)%8]));
+		    //lapPoints.push_back(laplacian(np)); // for sorted vector of laplacian count % CODE1
+		    //lapPoints.push_back(laplacian(np + params::dp[(direction+1)%8]));
 		    break;//found, no need further check
 		  }
 	      }
@@ -250,17 +250,17 @@ namespace mln{
 	// ********************************************
 	//sort(lapPoints.begin(),lapPoints.end());
 	//for(std::vector<int>::iterator j=lapPoints.begin()+count*0.9;j!=lapPoints.end();++j)
-	  //lap += *j;
+	//lap += *j;
 	//lap = lap/(count*0.1);
 	//********************************************* //CODE1
 	return grad/count;
 	/*}
-	 else
-	{
+	  else
+	  {
 	  lap = 0;
 	  return 0;
-	}*/ //CODE1
-    }
+	  }*/ //CODE1
+      }
       
       template <typename I,typename V, typename K >    
       inline void decision(V gradient, I output,K input, float gradThresHold,point2d p, tos& tree,bool& bounding_box_count_flag,
@@ -285,7 +285,7 @@ namespace mln{
 	float lap;
 	if(p != output.domain().pmin() )//not the first region
 	  {
-		vector<point2d> bord;
+	    vector<point2d> bord;
 	    //point arrive here must be a new point, at the top left most.
 	    float grad =followEdge(p+dpoint2d(0,-1),output,gradient,input,bord,contourSize,lap);
 	    if(grad >gradThresHold and contourSize>params::area) //CODE1 and (lap>params::laplacianThreshold or lap<-params::laplacianThreshold) 
@@ -316,9 +316,9 @@ namespace mln{
 	  {
 	    tree.color.push_back(0);
 	    tree.area.push_back(1);// for tree.area and tree.color calculation
-		tree.lap.push_back(0); // CODE2 CODE3
-		//count.push_back(1); //CODE2
-		tree.contourSize.push_back(0); //CODE4
+	    tree.lap.push_back(0); // CODE2 CODE3
+	    //count.push_back(1); //CODE2
+	    tree.contourSize.push_back(0); //CODE4
 	    current=++level; // start of region
 	  }
       }
@@ -340,8 +340,8 @@ namespace mln{
       tree.parent_array.push_back(1);
       //init of bounding box counting process
       short int x1=0,x2=0,y1=0,y2=0; bool bounding_box_count_flag;
-	  //vector<unsigned> count; // CODE2
-	  vector<float> lapVector; // CODE3
+      //vector<unsigned> count; // CODE2
+      vector<float> lapVector; // CODE3
       //to check the sign
       bool sign_flag;
       //processing queue
@@ -381,15 +381,15 @@ namespace mln{
 		      x2 = max(x2,n[0]);
 		      y1 = min(y1,n[1]);
 		      y2 = max(y2,n[1]);
-			  lapVector.push_back(input(n));//CODE3
+		      lapVector.push_back(input(n));//CODE3
 		    }
 		  //color and area count
 		  tree.color[current-1] += image(n);
 		  if(input(n)>10 or input(n)<10)
-			{
-			  //tree.lap[current-1] +=input(n); //CODE2
-			  //++count[current -1 ];
-			}
+		    {
+		      //tree.lap[current-1] +=input(n); //CODE2
+		      //++count[current -1 ];
+		    }
 		  ++tree.area[current-1];
 		  //add it to new region
 		  output(n)=current;
@@ -399,15 +399,15 @@ namespace mln{
 	  }//end of while
 	if (bounding_box_count_flag)
 	  {//CODE3
-		std::sort(lapVector.begin(),lapVector.end());
-    	if(lapVector[tree.area[current-1]/2]>0)
-		  for(std::vector<float>::iterator j=lapVector.begin() + tree.area[current-1]*0.90;j!=lapVector.end();++j)
-		    tree.lap[current-1] += *j;
-		else
-		  for(std::vector<float>::iterator j=lapVector.begin() ;j!=lapVector.begin() + tree.area[current-1]*0.10;++j)
-			tree.lap[current-1] += *j;			
-		tree.lap[current-1] = tree.lap[current-1]/(tree.area[current-1]*0.10);	  
-		lapVector.clear();
+	    std::sort(lapVector.begin(),lapVector.end());
+	    if(lapVector[tree.area[current-1]/2]>0)
+	      for(std::vector<float>::iterator j=lapVector.begin() + tree.area[current-1]*0.90;j!=lapVector.end();++j)
+		tree.lap[current-1] += *j;
+	    else
+	      for(std::vector<float>::iterator j=lapVector.begin() ;j!=lapVector.begin() + tree.area[current-1]*0.10;++j)
+		tree.lap[current-1] += *j;			
+	    tree.lap[current-1] = tree.lap[current-1]/(tree.area[current-1]*0.10);	  
+	    lapVector.clear();
 	  }
       }//end of for_all
 	  
@@ -415,30 +415,30 @@ namespace mln{
       
       tree.nLabels = level; // return number of regions
       for(int i =0;i<level;i++) //return the average gray level
-	  {
-		tree.color[i]=tree.color[i]/tree.area[i];
-		//tree.lap[i]= tree.lap[i]/count[i]; //CODE2
-	  }
-	  //Get segmentation error
-	 vector<float> fidelity(tree.nLabels,0);
-	  int temp;
-	  for_all(p)
+	{
+	  tree.color[i]=tree.color[i]/tree.area[i];
+	  //tree.lap[i]= tree.lap[i]/count[i]; //CODE2
+	}
+      //Get segmentation error
+      vector<float> fidelity(tree.nLabels,0);
+      int temp;
+      for_all(p)
       {
-		temp = image(p) - tree.color[output(p)-1];
-		fidelity[output(p)-1] = temp*temp;
-	  }
-	//get Lamda
+	temp = image(p) - tree.color[output(p)-1];
+	fidelity[output(p)-1] = temp*temp;
+      }
+      //get Lamda
       for(int i =1;i<level;i++) //return the average gray level
+	{
+	  tree.lambda.push_back(fidelity[i]/tree.contourSize[i]);
+	}
+      float max = *std::max_element(tree.lambda.begin(),tree.lambda.end())/255.;
+      //cout<<"Max "<<max<<endl;
+      if (max<255)
+	for(int i =0;i<level-1;i++) //return the average gray level
 	  {
-		tree.lambda.push_back(fidelity[i]/tree.contourSize[i]);
-	  }
-	  float max = *std::max_element(tree.lambda.begin(),tree.lambda.end())/255.;
-	  //cout<<"Max "<<max<<endl;
-	  if (max<255)
-      for(int i =0;i<level-1;i++) //return the average gray level
-	  {
-		//std::cout<<tree.lambda[i]<<endl;
-		tree.lambda[i]=tree.lambda[i]/max;
+	    //std::cout<<tree.lambda[i]<<endl;
+	    tree.lambda[i]=tree.lambda[i]/max;
 	  }
       return output;
     }
@@ -466,7 +466,7 @@ namespace mln{
       mln_piter_(box2d) p(labeling.domain());
       //paste binary value into image
       for_all(p)
-	  output(p) = binary[labeling(p)-1];
+	output(p) = binary[labeling(p)-1];
       return output;
     }
 
@@ -742,7 +742,7 @@ namespace mln{
       }
 	  
       unsigned joinRegionsThree(const tos& tree, vector<bool>& queue,box2d& box,
-		       unsigned node,neighbors ngh,int oldNode)
+				unsigned node,neighbors ngh,int oldNode)
       {
 	/*
 	 * continue searching and joint component on the right and then on the left of a component, 
@@ -771,76 +771,76 @@ namespace mln{
       }
 	  
       unsigned joinRegionsRange(const tos& tree, vector<bool>& queue,box2d& box,
-		       unsigned node,int oldNode)
+				unsigned node,int oldNode)
       {
-		/*
-		 * Effort to make the joint faster. This search using the region array and tree.
-		 * and join component using distance of its center.
-		 */
-		int count =1;
-		vector<unsigned> neighbors;
-		//Search parent tree
-		for(int i = tree.nLabels-1;i>0;i--)
-		  {			
-		//check process queue
-			if(queue[i])
-			{
+	/*
+	 * Effort to make the joint faster. This search using the region array and tree.
+	 * and join component using distance of its center.
+	 */
+	int count =1;
+	vector<unsigned> neighbors;
+	//Search parent tree
+	for(int i = tree.nLabels-1;i>0;i--)
+	  {			
+	    //check process queue
+	    if(queue[i])
+	      {
 		//check color
-			  //if(tree.isEquivalent(tree.color[i],tree.color[tree.getParentIndex(i)],params::score))
-				//continue;
+		//if(tree.isEquivalent(tree.color[i],tree.color[tree.getParentIndex(i)],params::score))
+		//continue;
 		//find component having same parent
-			  if(tree.parent_array[i]!=tree.parent_array[node])
-				continue; 
+		if(tree.parent_array[i]!=tree.parent_array[node])
+		  continue; 
 		//check distance
-			  if(util::checkCharacter(tree,i,node) and util::checkCharacter(tree,node,i))
-		//check the laplacian
-			  //if(tree.isEquivalent(tree.lap[i],tree.lap[node],params::laplacianThreshold*0.5))
-			  {
-		//joint box
-				queue[i] = false;
-				box = getBoundingBox(box,tree.boxes[node].box,tree.boxes[i].box);
-		//joint neighbors
-				neighbors.push_back(i);
-			  }	
-			}
-		  }
-		for(int i =0;i<neighbors.size();i++)
-		  count+=joinRegionsRange(tree, queue,box,neighbors[i],node);	  
-		return count;
+		if(util::checkCharacter(tree,i,node) and util::checkCharacter(tree,node,i))
+		  //check the laplacian
+		  //if(tree.isEquivalent(tree.lap[i],tree.lap[node],params::laplacianThreshold*0.5))
+		  {
+		    //joint box
+		    queue[i] = false;
+		    box = getBoundingBox(box,tree.boxes[node].box,tree.boxes[i].box);
+		    //joint neighbors
+		    neighbors.push_back(i);
+		  }	
+	      }
 	  }
+	for(int i =0;i<neighbors.size();i++)
+	  count+=joinRegionsRange(tree, queue,box,neighbors[i],node);	  
+	return count;
+      }
     }//end of internal
 		
     namespace three{//search neighbors using 3 line
-	  vector<box2d> getRegions(const image2d<unsigned>& image,const tos& tree)
-	  {
-		//to check if component has been proceed
-		vector<bool> queue(tree.nLabels-1,true);
-		//tempo box
-		vector<box2d> boxes;
-		internal::neighbors ngh(tree.nLabels-1);
-		internal::neighborSearch(image,tree,ngh);
-		//run from leaves to root
-		for(int node = tree.nLabels-2;node>=0;node--)		
+      vector<box2d> getRegions(const image2d<unsigned>& image,const tos& tree)
+      {
+	//to check if component has been proceed
+	vector<bool> queue(tree.nLabels-1,true);
+	//tempo box
+	vector<box2d> boxes;
+	internal::neighbors ngh(tree.nLabels-1);
+	internal::neighborSearch(image,tree,ngh);
+	//run from leaves to root
+	for(int node = tree.nLabels-2;node>=0;node--)		
 	  if(queue[node])//if not proceed
-		{
-		  box2d box;
-		  if(internal::joinRegionsThree(tree,queue,box,node,ngh,0)) //NOTE: this is redundant, if thresholding the box size, no need to check
-			if(box.len(1)*box.len(2)>params::boxSize) //if total box size greater than a thresHold
+	    {
+	      box2d box;
+	      if(internal::joinRegionsThree(tree,queue,box,node,ngh,0)) //NOTE: this is redundant, if thresholding the box size, no need to check
+		if(box.len(1)*box.len(2)>params::boxSize) //if total box size greater than a thresHold
 		  //add it
 		  boxes.push_back(box);
-		}
-		return boxes;
-	  }
-	}
+	    }
+	return boxes;
+      }
+    }
 	
-	namespace distance{//search for neighbors using distance calculations
-	  vector<box2d> getRegions(const image2d<unsigned>& image,tos& tree)
-	  {
-		//tempo box
-		vector<box2d> boxes;
-		//to check if component has been proceed
-		vector<bool> queue(tree.nLabels,true);
-		/************************************** Average of laplacian, used as a thresHold
+    namespace distance{//search for neighbors using distance calculations
+      vector<box2d> getRegions(const image2d<unsigned>& image,tos& tree)
+      {
+	//tempo box
+	vector<box2d> boxes;
+	//to check if component has been proceed
+	vector<bool> queue(tree.nLabels,true);
+	/************************************** Average of laplacian, used as a thresHold
 		float pAvg=0,nAvg=0;
 		unsigned countP=0,countN=0;
 		for(std::vector<float>::iterator j=tree.lap.begin();j!=tree.lap.end();++j)
@@ -850,75 +850,75 @@ namespace mln{
 		  {nAvg+=*j;countN+=1;}
 		pAvg=pAvg/countP;
 		nAvg=nAvg/countN;*/
-		//remove some node **************************************************
-		for(int node = tree.nLabels-1;node>0;node--)
-		{
-		//ocupation and ratio
-		  if(tree.boxes[node].height > tree.boxes[node].width*params::widthHeightRatio and tree.boxes[node].width*1./tree.boxes[node].height > params::heightWidthRatio)
-			{queue[node] = false; continue;}
-		  if(tree.area[node]*1./(tree.boxes[node].width*tree.boxes[node].height) < 0.1 or (tree.area[node]*1./(tree.boxes[node].width*tree.boxes[node].height) > 0.9 and tree.boxes[node].width > tree.boxes[node].height))
-			{queue[node] = false; tree.removedRatio.push_back(tree.border[node-1]); continue;}			
-		//lap
-		  if((tree.lap[node]<params::laplacianThreshold and tree.lap[node]> -params::laplacianThreshold ) or tree.area[node]<30)
-		  //if(not tree.isEquivalent(tree.lap[node],-tree.lap[tree.getParentIndex(node)], params::laplacianThreshold)) //CODE5
-		  //if(tree.lap[node]<pAvg and tree.lap[node]> nAvg )
-		  {queue[node] = false; tree.removedLap.push_back(tree.border[node-1]); tree.removedLapTemp.push_back(tree.lap[node]); continue;}			
-		//height and width
-		  if(tree.boxes[node].width<params::minWidth or tree.boxes[node].height <params::minHeight )
-			{queue[node] = false; continue;}
-
-		}
-		//remove some node **************************************************
-		
-		
-		//run from leaves to root
-		for(int node = tree.nLabels-1;node>0;node--)		
-		if(queue[node])//if not proceed
-		  {
-			box2d box;
-			//clear queue
-			queue[node]=false;
-			//check color
-			//if(not tree.isEquivalent(tree.color[node],tree.color[tree.getParentIndex(node)],params::score))
-			if(internal::joinRegionsRange(tree,queue,box,node,0)>1) //NOTE: this is redundant, if thresholding the box size, no need to check
-			  if(box.len(1)*box.len(2)>params::boxSize) //if total box size greater than a thresHold
-			  //add it
-			  boxes.push_back(box);
-		  }
-		return boxes;
-	  }
-	}
-  
-	namespace internal{
-	  template<typename I>
-	  void max_min(I image,int& min, int& max)
+	//remove some node **************************************************
+	for(int node = tree.nLabels-1;node>0;node--)
 	  {
-		/*
-		 * get the max value of that image
-		 */	  
-		mln_piter_(box2d) p(image.domain());
-		for_all(p)
-		  if(image(p)>max) max =image(p);
-		  else if (image(p)<min) min = image(p);
+	    //ocupation and ratio
+	    if(tree.boxes[node].height > tree.boxes[node].width*params::widthHeightRatio and tree.boxes[node].width*1./tree.boxes[node].height > params::heightWidthRatio)
+	      {queue[node] = false; continue;}
+	    if(tree.area[node]*1./(tree.boxes[node].width*tree.boxes[node].height) < 0.1 or (tree.area[node]*1./(tree.boxes[node].width*tree.boxes[node].height) > 0.9 and tree.boxes[node].width > tree.boxes[node].height))
+	      {queue[node] = false; tree.removedRatio.push_back(tree.border[node-1]); continue;}			
+	    //lap
+	    if((tree.lap[node]<params::laplacianThreshold and tree.lap[node]> -params::laplacianThreshold ) or tree.area[node]<30)
+	      //if(not tree.isEquivalent(tree.lap[node],-tree.lap[tree.getParentIndex(node)], params::laplacianThreshold)) //CODE5
+	      //if(tree.lap[node]<pAvg and tree.lap[node]> nAvg )
+	      {queue[node] = false; tree.removedLap.push_back(tree.border[node-1]); tree.removedLapTemp.push_back(tree.lap[node]); continue;}			
+	    //height and width
+	    if(tree.boxes[node].width<params::minWidth or tree.boxes[node].height <params::minHeight )
+	      {queue[node] = false; continue;}
+
 	  }
-	}
+	//remove some node **************************************************
+		
+		
+	//run from leaves to root
+	for(int node = tree.nLabels-1;node>0;node--)		
+	  if(queue[node])//if not proceed
+	    {
+	      box2d box;
+	      //clear queue
+	      queue[node]=false;
+	      //check color
+	      //if(not tree.isEquivalent(tree.color[node],tree.color[tree.getParentIndex(node)],params::score))
+	      if(internal::joinRegionsRange(tree,queue,box,node,0)>1) //NOTE: this is redundant, if thresholding the box size, no need to check
+		if(box.len(1)*box.len(2)>params::boxSize) //if total box size greater than a thresHold
+		  //add it
+		  boxes.push_back(box);
+	    }
+	return boxes;
+      }
+    }
+  
+    namespace internal{
+      template<typename I>
+      void max_min(I image,int& min, int& max)
+      {
+	/*
+	 * get the max value of that image
+	 */	  
+	mln_piter_(box2d) p(image.domain());
+	for_all(p)
+	  if(image(p)>max) max =image(p);
+	  else if (image(p)<min) min = image(p);
+      }
+    }
 	
-	template<typename I>
-	I normalisation(const I& image)
-	{
-	  mln_piter_(box2d) p(image.domain());
+    template<typename I>
+    I normalisation(const I& image)
+    {
+      mln_piter_(box2d) p(image.domain());
       I output(image.domain());
       int max=0;
-	  int min=0;
-	  internal::max_min(image,min,max);
+      int min=0;
+      internal::max_min(image,min,max);
       for_all(p)
       {
 	if(image(p)>0) output(p) = 255*image(p)/max;
 	else if(image(p)<=0) output(p) = -255*image(p)/min;
 	//else  output(p) = 0;
       }
-	  return output;
-	}
+      return output;
+    }
   
   }
 }

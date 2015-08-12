@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
   params::laplacianThreshold=atoi(argv[6]);
   //image2d<unsigned int> output_4 = tos::labeling(tos::immerse2(input),lap,grad,30,treeOfShape);//replace 30 = atof(argv[6]) (gradThresHold)
   image2d<unsigned int> output_4 = tos::labeling(tos::immerse2(input),lap,grad,0,treeOfShape);//replace 30 = atof(argv[6]) (gradThresHold)
-  
+ 
   //get an output
   std::cout<<"number of Labels: "<<treeOfShape.nLabels<<endl;
   //get the bounding box
@@ -149,5 +149,6 @@ int main(int argc, char* argv[])
   //  cout<<endl;
   
   //cout<<treeOfShape.lambda.size()<<" "<<treeOfShape.nLabels<<" "<<treeOfShape.border.size()<<endl;
+ 
 }
 //attention, the tree code lable from 1, but the vector starts from 0

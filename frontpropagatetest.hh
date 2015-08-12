@@ -12,6 +12,7 @@ test average of only the strongest point
 *Teting : avg lap distance CODE 5: Problem: not always true, sometime  strong region is included in another strong region. FAIL
 *Done: Replace copy with reference: reduce time
 *Doing: separate tos to tos, binary, textbox
+*Testing max of Laplacian //CODE6
 */
 
 #ifndef frontPropagate_include
@@ -212,7 +213,7 @@ namespace mln{
     {
       template <typename I, typename V>
       float followEdge(const point2d& p,const image2d<unsigned int>& output,const image2d<I>& gradient,const image2d< V >& laplacian,vector<point2d>& bord,
-		       unsigned& count,float& lap) // CODE1 last param lap
+		       unsigned& count,float& lap, boundingBox& box2d) // CODE1 last param lap
     {
 	/*
 	 *Follow the contour of component and return the gradient moyenne
@@ -222,7 +223,8 @@ namespace mln{
 	point2d np=p;
 	float grad = 0;
 	vector < int > lapPoints; //CODE1
-	int direction =0;     
+	int direction =0;
+	short xmin = p[0] ,xmax = p[0],ymin = p[1],ymax = p[1];
 	do
 	  {//while not return to the original
 	    for(int i=0;i <8;i++)
@@ -237,7 +239,10 @@ namespace mln{
 		    bord.push_back(np);//add next point to return vector
 		    grad+=gradient(np);//increase gradient
 		    count++;//increase counter
-			
+			xmin = xmin>np[0]? np[0]: xmin;
+		    xmax = xmax>np[0]? xmax : np[0];
+		    ymin = ymin>np[1]? np[1]: ymin;
+		    ymax = ymax>np[1]? ymax : np[1];
 			//lapPoints.push_back(laplacian(np)); // for sorted vector of laplacian count % CODE1
 			//lapPoints.push_back(laplacian(np + params::dp[(direction+1)%8]));
 		    break;//found, no need further check
@@ -253,6 +258,7 @@ namespace mln{
 	  //lap += *j;
 	//lap = lap/(count*0.1);
 	//********************************************* //CODE1
+	box2d = boundingBox(xmin+1,xmax-1,ymin+1,ymax-1);
 	return grad/count;
 	/*}
 	 else
@@ -264,7 +270,7 @@ namespace mln{
       
       template <typename I,typename V, typename K >    
       inline void decision(V gradient, I output,K input, float gradThresHold,point2d p, tos& tree,bool& bounding_box_count_flag,
-			   unsigned& level, unsigned& current,short int& x1,short int& x2,short int& y1,short int& y2) //, vector< vector<int> > lapContainer) //CODE2vector<unsigned>& count
+			   unsigned& level, unsigned& current)//short int& x1,short int& x2,short int& y1,short int& y2) //, vector< vector<int> > lapContainer) //CODE2vector<unsigned>& count
       {
 	/*
 	 *Give the decision if the this zone is a new component or should be merged with
@@ -280,30 +286,37 @@ namespace mln{
 	 * * For region decided to be merge, it will use the ticket of the top left
 	 * * point of the contour and the bounding box process will not work (as it
 	 * * be included in it parent)
-	 */			
+	 */
+	boundingBox box = boundingBox(0,0,0,0);
 	unsigned contourSize;
 	float lap;
 	if(p != output.domain().pmin() )//not the first region
 	  {
 		vector<point2d> bord;
 	    //point arrive here must be a new point, at the top left most.
-	    float grad =followEdge(p+dpoint2d(0,-1),output,gradient,input,bord,contourSize,lap);
-	    if(grad >gradThresHold and contourSize>params::area) //CODE1 and (lap>params::laplacianThreshold or lap<-params::laplacianThreshold) 
+	    float grad =followEdge(p+dpoint2d(0,-1),output,gradient,input,bord,contourSize,lap,box);
+	    if(grad >gradThresHold and contourSize>params::area
+		   and box.width > params::minWidth
+		   and box.height > params::minHeight
+		   and box.height < box.width*params::widthHeightRatio
+		   and box.width < box.height*params::heightWidthRatio
+		  ) //CODE1 and (lap>params::laplacianThreshold or lap<-params::laplacianThreshold) 
 	      {
-		tree.border.push_back(bord);
-		//tree.lap.push_back(lap); //CODE1
-		tree.area.push_back(1);// for tree.area and tree.color calculation
-		tree.lap.push_back(0); // CODE2 CODE3
-		//count.push_back(1); // CODE2
-		tree.contourSize.push_back(contourSize); //CODE4
-		//for bounding_box;
-		tree.boxes.push_back(boundingBox(x1,x2,y1,y2));
-		bounding_box_count_flag =true;
-		x1=p[0];x2=p[0];y1=p[1];y2=p[1];
-		
-		current=++level;  //increase counter start of region		
-		tree.parent_array.push_back(output(p+dpoint2d(-1,-1))); //mark parenthood
-		tree.startPoint.push_back(p); //for debug, mark start points
+			tree.border.push_back(bord);
+			//tree.lap.push_back(lap); //CODE1
+			tree.area.push_back(1);// for tree.area and tree.color calculation
+			tree.lap.push_back(0); // CODE2 CODE3
+			//count.push_back(1); // CODE2
+			tree.contourSize.push_back(contourSize); //CODE4
+			//for bounding_box;
+			//tree.boxes.push_back(boundingBox(x1,x2,y1,y2));
+			tree.boxes.push_back(box);
+			bounding_box_count_flag =true;
+			//x1=p[0];x2=p[0];y1=p[1];y2=p[1];
+			
+			current=++level;  //increase counter start of region		
+			tree.parent_array.push_back(output(p+dpoint2d(-1,-1))); //mark parenthood
+			tree.startPoint.push_back(p); //for debug, mark start points
 	      }
 	    else
 	      {
@@ -312,7 +325,7 @@ namespace mln{
 		tree.removedBorder.push_back(bord);
 		if(grad <gradThresHold)
 		  tree.removedBorderGrad.push_back(bord);
-		else if(contourSize<params::area)
+		else
 		  tree.removedBorderContour.push_back(bord);
 	      }
 	  }
@@ -321,6 +334,7 @@ namespace mln{
 	    tree.color.push_back(0);
 	    tree.area.push_back(1);// for tree.area and tree.color calculation
 		tree.lap.push_back(0); // CODE2 CODE3
+		tree.boxes.push_back(box);
 		//count.push_back(1); //CODE2
 		tree.contourSize.push_back(0); //CODE4
 	    current=++level; // start of region
@@ -346,6 +360,7 @@ namespace mln{
       short int x1=0,x2=0,y1=0,y2=0; bool bounding_box_count_flag;
 	  //vector<unsigned> count; // CODE2
 	  vector<float> lapVector; // CODE3
+	  float lapMax = 0;
       //to check the sign
       bool sign_flag;
       //processing queue
@@ -364,7 +379,7 @@ namespace mln{
 	if(output(p))  continue;
 	//get the decision
 	internal::decision(gradient,output,input,gradThresHold,p,tree,bounding_box_count_flag,
-			   level,current,x1,x2, y1,y2);//,lapContainer);  //CODE2 count  
+			   level,current);//,x1,x2, y1,y2);//,lapContainer);  //CODE2 count  
 	//mark the first point
 	output(p)=current;
 	//get the sign of region
@@ -381,19 +396,20 @@ namespace mln{
 		{
 		  if (bounding_box_count_flag)
 		    {
-		      x1 = min(x1,n[0]);
-		      x2 = max(x2,n[0]);
-		      y1 = min(y1,n[1]);
-		      y2 = max(y2,n[1]);
-			  lapVector.push_back(input(n));//CODE3
+		      //x1 = min(x1,n[0]);
+		      //x2 = max(x2,n[0]);
+		      //y1 = min(y1,n[1]);
+		      //y2 = max(y2,n[1]);
+			  //lapVector.push_back(input(n));//CODE3
+			  lapMax = sign_flag? (lapMax<input(n)?input(n):lapMax) : (lapMax<input(n)?lapMax:input(n));
 		    }
 		  //color and area count
 		  tree.color[current-1] += image(n);
-		  if(input(n)>10 or input(n)<10)
+		  /*if(input(n)>10 or input(n)<10)
 			{
 			  //tree.lap[current-1] +=input(n); //CODE2
 			  //++count[current -1 ];
-			}
+			}*/
 		  ++tree.area[current-1];
 		  //add it to new region
 		  output(n)=current;
@@ -401,7 +417,7 @@ namespace mln{
 		  Q.push(n);
 		}
 	  }//end of while
-	if (bounding_box_count_flag)
+	/*if (bounding_box_count_flag)
 	  {//CODE3
 		std::sort(lapVector.begin(),lapVector.end());
     	if(lapVector[tree.area[current-1]/2]>0)
@@ -412,17 +428,21 @@ namespace mln{
 			tree.lap[current-1] += *j;			
 		tree.lap[current-1] = tree.lap[current-1]/(tree.area[current-1]*0.10);	  
 		lapVector.clear();
-	  }
+		*/
+		if (bounding_box_count_flag)
+		  tree.lap[current-1] = lapMax>0?lapMax:-lapMax;
+	  
       }//end of for_all
 	  
-      tree.boxes.push_back(boundingBox(x1,x2,y1,y2));//add the last bouding box
-      
+      //tree.boxes.push_back(boundingBox(x1,x2,y1,y2));//add the last bouding box
+      std::cout<<level<<" "<<tree.boxes.size();
       tree.nLabels = level; // return number of regions
       for(int i =0;i<level;i++) //return the average gray level
 	  {
 		tree.color[i]=tree.color[i]/tree.area[i];
 		//tree.lap[i]= tree.lap[i]/count[i]; //CODE2
 	  }
+	  /*
 	  //Get segmentation error
 	 vector<float> fidelity(tree.nLabels,0);
 	  int temp;
@@ -443,7 +463,7 @@ namespace mln{
 	  {
 		//std::cout<<tree.lambda[i]<<endl;
 		tree.lambda[i]=tree.lambda[i]/max;
-	  }
+	  }*/
       return output;
     }
 
@@ -858,18 +878,20 @@ namespace mln{
 		for(int node = tree.nLabels-1;node>0;node--)
 		{
 		//ocupation and ratio
-		  if(tree.boxes[node].height > tree.boxes[node].width*params::widthHeightRatio and tree.boxes[node].width*1./tree.boxes[node].height > params::heightWidthRatio)
-			{queue[node] = false; continue;}
-		  if(tree.area[node]*1./(tree.boxes[node].width*tree.boxes[node].height) < 0.1 or (tree.area[node]*1./(tree.boxes[node].width*tree.boxes[node].height) > 0.9 and tree.boxes[node].width > tree.boxes[node].height))
+		  //if(tree.boxes[node].height > tree.boxes[node].width*params::widthHeightRatio and tree.boxes[node].width*1./tree.boxes[node].height > params::heightWidthRatio)
+			//{queue[node] = false; continue;}
+		  if(tree.area[node]*1./(tree.boxes[node].width*tree.boxes[node].height) < 0.1
+			or (tree.area[node]*1./(tree.boxes[node].width*tree.boxes[node].height) > 0.9
+			and tree.boxes[node].width > tree.boxes[node].height))
 			{queue[node] = false; tree.removedRatio.push_back(tree.border[node-1]); continue;}			
 		//lap
-		  if((tree.lap[node]<params::laplacianThreshold and tree.lap[node]> -params::laplacianThreshold ) or tree.area[node]<30)
+		  if((tree.lap[node]<params::laplacianThreshold ) or tree.area[node]<30)
 		  //if(not tree.isEquivalent(tree.lap[node],-tree.lap[tree.getParentIndex(node)], params::laplacianThreshold)) //CODE5
 		  //if(tree.lap[node]<pAvg and tree.lap[node]> nAvg )
 		  {queue[node] = false; tree.removedLap.push_back(tree.border[node-1]); tree.removedLapTemp.push_back(tree.lap[node]); continue;}			
 		//height and width
-		  if(tree.boxes[node].width<params::minWidth or tree.boxes[node].height <params::minHeight )
-			{queue[node] = false; continue;}
+		  //if(tree.boxes[node].width<params::minWidth or tree.boxes[node].height <params::minHeight )
+			//{queue[node] = false; continue;}
 
 		}
 		//remove some node **************************************************
