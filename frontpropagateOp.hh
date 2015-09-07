@@ -30,6 +30,11 @@ test average of only the strongest point
 #include <iostream>
 #include <algorithm>
 #include <math.h>
+//OPti
+#include <mln/border/fill.hh>
+#include <mln/util/array.hh>
+#include <mln/core/routine/initialize.hh>
+#include <mln/core/alias/neighb2d.hh>
 
 #include <algorithm> //std::sort
 
@@ -45,8 +50,8 @@ namespace mln{
 	
     const unsigned widthHeightRatio = 10;
     const unsigned heightWidthRatio = 5;
-    const unsigned minWidth = 5;
-    const unsigned minHeight =10; //Minimum to form a E
+    const unsigned minWidth = 3;
+    const unsigned minHeight =5; //Minimum to form a E
 	const unsigned SeCof = 2;
 	
     //these 2 values are used in the searching for average edge gradient.
@@ -236,7 +241,7 @@ namespace mln{
 		direction = (params::iter[i]+direction) %8;//get direction
 		//*--------------> todo: replace with special ticket for the border
 		if ( output(np + params::dp[direction]) and output(np + params::dp[(direction+1)%8]) == 0
-		     and output.domain().has(np + params::dp[(direction+1)%8]))
+		     and laplacian(np + params::dp[(direction+1)%8]) != 300)
 		  {//if that point is checked and its next point on the left isn't, it is our next point
 			lap += laplacian(np + params::dp[(direction+1)%8]); // CODE0
 		    np=np+params::dp[direction];// move to next point
@@ -296,6 +301,7 @@ namespace mln{
 	boundingBox box = boundingBox(0,0,0,0);
 	unsigned contourSize;
 	float lap; // CODE7 turn;
+
 	if(p != output.domain().pmin() )//not the first region
 	  {
 		vector<point2d> bord;
@@ -364,10 +370,15 @@ namespace mln{
        *Give the decision if the this zone is a new component or should be merged with
        *the upper component, initial color (average gray level), area count and bounding box counting
        */
-	  
+	  const unsigned N = input.nelements(); // pixels, including those of the border
+	  border::fill(input, 300); // so that borders stop the queue-based propagations!
+	
       //init of output
       image2d<unsigned int> output(input.domain());
-      data::fill(output,0); 
+	  initialize(output, input); // guaranty the same structure (border thickness...)	  
+      data::fill(output,0);	  
+
+	  
       //init of parenthood vector
       tree.parent_array.push_back(1);
       //init of bounding box counting process
@@ -378,57 +389,63 @@ namespace mln{
       //to check the sign
       bool sign_flag;
       //processing queue
-      p_queue_fast<point2d> Q;
+      p_queue_fast<unsigned> Q;
       //tempo point
-      point2d q;
+      unsigned q;
       //neighbor iteration
-      mln_niter_(neighb2d) n(c4(),q); 
+
+	  const unsigned n_nbh = c4().size();
+	  mln::util::array<int> dp = offsets_wrt(input, c4().win());
+	
       //ticket management
       unsigned level=0,current;
       //iter (slow)
       mln_piter_(box2d) p(input.domain());
-      for_all(p)
-      {
+    for (unsigned p = 0; p < N; ++p) // p is now an "unsigned"
+    {
 	//if this point has been processed in side de queue
-	if(output(p))  continue;
+	if(input.element(p) == 300 or output.element(p))  continue;
 	//get the decision
-	internal::decision(gradient,output,input,gradThresHold,p,tree,bounding_box_count_flag,
+	internal::decision(gradient,output,input,gradThresHold,output.point_at_offset(p),tree,bounding_box_count_flag,
 			   level,current);//,x1,x2, y1,y2);//,lapContainer);  //CODE2 count  
 	//mark the first point
-	output(p)=current;
+	output.element(p)=current;
 	//get the sign of region
-	sign_flag = input(p)>0;
+	sign_flag = input.element(p)>0;
 	//start of region processing
 	Q.push(p); 
       
 	while(not Q.empty())
 	  {
 	    q = Q.pop_front();
-	    for_all(n)
-	      if( input.domain().has(n) and not output(n) and ( sign_flag == (input(n) > 0) or input(n) == 0 ) ) 
-		//if the neighbor is inside the image and it does not belong to any region and its sign is the same or it is null
+		for (unsigned j = 0; j < n_nbh; ++j)
 		{
-		  if (bounding_box_count_flag)
-		    {
-		      //x1 = min(x1,n[0]);
-		      //x2 = max(x2,n[0]);
-		      //y1 = min(y1,n[1]);
-		      //y2 = max(y2,n[1]);
-			  //lapVector.push_back(input(n));//CODE3
-			  lapMax = sign_flag? (lapMax<input(n)?input(n):lapMax) : (lapMax<input(n)?lapMax:input(n));
-		    }
-		  //color and area count
-		  tree.color[current-1] += image(n);
-		  /*if(input(n)>10 or input(n)<10)
-			{
-			  //tree.lap[current-1] +=input(n); //CODE2
-			  //++count[current -1 ];
-			}*/
-		  ++tree.area[current-1];
-		  //add it to new region
-		  output(n)=current;
-		  //add its neighbors to queue
-		  Q.push(n);
+			unsigned n = q + dp[j];
+			if( input.element(n) != 300 and not output.element(n) and ( sign_flag == (input.element(n)> 0) or input.element(n) == 0 ) ) 
+		  //if the neighbor is inside the image and it does not belong to any region and its sign is the same or it is null
+		  {
+			if (bounding_box_count_flag)
+			  {
+				//x1 = min(x1,n[0]);
+				//x2 = max(x2,n[0]);
+				//y1 = min(y1,n[1]);
+				//y2 = max(y2,n[1]);
+				//lapVector.push_back(input.element(n));//CODE3
+				lapMax = sign_flag? (lapMax<input.element(n)?input.element(n):lapMax) : (lapMax<input.element(n)?lapMax:input.element(n));
+			  }
+			//color and area count
+			tree.color[current-1] += image.element(n);
+			/*if(input.element(n)>10 or input.element(n)<10)
+			  {
+				//tree.lap[current-1] +=input.element(n); //CODE2
+				//++count[current -1 ];
+			  }*/
+			++tree.area[current-1];
+			//add it to new region
+			output.element(n)=current;
+			//add its neighbors to queue
+			Q.push(n);
+		  }
 		}
 	  }//end of while
 	/*if (bounding_box_count_flag)
@@ -456,7 +473,7 @@ namespace mln{
 		tree.color[i]=tree.color[i]/tree.area[i];
 		//tree.lap[i]= tree.lap[i]/count[i]; //CODE2
 	  }
-	  
+	 /* 
 	  //Get segmentation error
 	 vector<float> fidelity(tree.nLabels,0);
 	  int temp;
@@ -477,7 +494,7 @@ namespace mln{
 	  {
 		//std::cout<<tree.lambda[i]<<endl;
 		tree.lambda[i]=tree.lambda[i]/max;
-	  }
+	  }*/
       return output;
     }
 

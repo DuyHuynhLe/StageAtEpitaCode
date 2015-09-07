@@ -74,7 +74,8 @@ namespace mln{
       //create random colors
       for(i =0;i<tree.nLabels;i++)
 	{
-	  color[i]=value::rgb8( rand() * 255 , rand() * 255 , rand() * 255);	  
+	  color[i]=value::rgb8( rand() * 255 , rand() * 255 , rand() * 255);
+	  //color[i] = value::rgb8(  tree.turn[i]* 255/500 , tree.turn[i]* 255/500 ,  tree.turn[i]* 255/500);
 	}
       //paste to the output
       mln_piter_(box2d) p(image.domain());
@@ -95,9 +96,16 @@ namespace mln{
 	  for(i=0;i<tree.border.size();i++)
 		for(j=0;j<tree.border[i].size();j++)
 	    output(tree.border[i][j])=value::rgb8(255,255,255);
+		
+	  cout<<"removed by grad "<<tree.removedBorder.size()<<endl;
 	  for(i=0;i<tree.removedBorder.size();i++)
 		for(j=0;j<tree.removedBorder[i].size();j++)
 		  output(tree.removedBorder[i][j])=value::rgb8(200,0,0);
+		  
+	  cout<<"removed by size "<<tree.removed1.size()<<endl;
+	  for(i=0;i<tree.removed1.size();i++)
+		for(j=0;j<tree.removed1[i].size();j++)
+		  output(tree.removed1[i][j])=value::rgb8(0,0,0);		  
 		  
 	  cout<<"removed by lap "<<tree.removedLap.size()<<endl; 
 	  for(i=0;i<tree.removedLap.size();i++)
@@ -108,6 +116,12 @@ namespace mln{
 	  for(i=0;i<tree.removedRatio.size();i++)
 		for(j=0;j<tree.removedRatio[i].size();j++)
 		  output(tree.removedRatio[i][j])=value::rgb8(0,0,255);
+		  
+	  cout<<"removed by contour size"<<tree.removed2.size()<<endl; 
+	  for(i=0;i<tree.contourSize.size();i++)
+		for(j=0;j<tree.removed2[i].size();j++)
+		  output(tree.removed2[i][j])=value::rgb8(255,255,0);
+		  
 		  		  
 	}
       //bounding box of each component
@@ -121,7 +135,7 @@ namespace mln{
       //for(int i =0;i<tos::debug.size();i++)
       //output(tos::debug[i])=value::rgb8(255,255,255);
 	  
-      //label_code(tree.parent_array,color,"label_code.ppm");
+      label_code(tree.parent_array,color,"label_code.ppm");
       io::magick::save(output,filename);
     }
 	
