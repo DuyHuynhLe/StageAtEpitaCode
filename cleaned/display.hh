@@ -234,7 +234,7 @@ namespace mln{
       box2d current;
       for(int i=0;i<tree.boundingBoxes.size();i++)
 	{
-	  current = make::box2d(tree.boundingBoxes[i].pmin()[0]/2,tree.boundingBoxes[i].pmin()[1]/2,tree.boundingBoxes[i].pmax()[0]/2,tree.boundingBoxes[i].pmax()[1]/2);
+	  current = make::box2d(tree.boundingBoxes[i].pmin()[0],tree.boundingBoxes[i].pmin()[1],tree.boundingBoxes[i].pmax()[0],tree.boundingBoxes[i].pmax()[1]);
 	  mln::draw::box (image,current,value::rgb8(255,0,0));
 	}
       io::magick::save(image,filename);
@@ -246,7 +246,7 @@ namespace mln{
 	  if (outFile.is_open())
 	  {
 		for(int i = 0;i<tree.boundingBoxes.size();i++)
-		  outFile<<tree.boundingBoxes[i].pmin()[1]/2<<","<<tree.boundingBoxes[i].pmin()[0]/2<<","<<tree.boundingBoxes[i].pmax()[1]/2<<","<<tree.boundingBoxes[i].pmax()[0]/2<<"\r\n";
+		  outFile<<tree.boundingBoxes[i].pmin()[1]<<","<<tree.boundingBoxes[i].pmin()[0]<<","<<tree.boundingBoxes[i].pmax()[1]<<","<<tree.boundingBoxes[i].pmax()[0]<<"\r\n";
 		outFile.close();
 	  }
 	}

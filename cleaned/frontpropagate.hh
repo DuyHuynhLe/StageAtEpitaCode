@@ -30,6 +30,8 @@ test average of only the strongest point
 #include <iostream>
 #include <algorithm>
 #include <math.h>
+#include <sstream>
+#include <string>
 
 #include <algorithm> //std::sort
 
@@ -39,14 +41,14 @@ namespace mln{
   {
     const unsigned score =10;
     const float textSize = 0.5; //ratio of similarity between 2 letters
-    const unsigned boxSize = 50; //minimum area of bounding box to be kept (width * height)
-    const unsigned area = 30;// perimeter minimum of a component to be kept old =30
+    const unsigned boxSize = 25; //minimum area of bounding box to be kept (width * height)
+    const unsigned area = 15;// perimeter minimum of a component to be kept old =30
     float laplacianThreshold = 50; //thresHold of 25% strongest point of laplacian of a region
 	
     const unsigned widthHeightRatio = 10;
     const unsigned heightWidthRatio = 5;
-    const unsigned minWidth = 8;
-    const unsigned minHeight =20; //Minimum to form a E
+    unsigned minWidth = 8;
+    unsigned minHeight =10; //Minimum to form a E
 	const unsigned SeCof = 2;
 	
     //these 2 values are used in the searching for average edge gradient.
@@ -214,68 +216,122 @@ namespace mln{
 	
     namespace internal
     {
-       template <typename I, typename V>
-      float followEdge(const point2d& p,const image2d<unsigned int>& output,const image2d<I>& gradient,const image2d< V >& laplacian,vector<point2d>& bord,
-		       unsigned& count,float& lap, boundingBox& box2d) // CODE1 last param lap //CODE7 turn ,float& turn
-    {
-	/*
-	 *Follow the contour of component and return the gradient moyenne
-	 *at these points and number of point in the edge
-	 */	
-	count=0;
-	//turn = 0; CODE7
-	point2d np=p;
-	float grad = 0;
-	vector < int > lapPoints; //CODE1
-	int direction =0;
-	short xmin = p[0] ,xmax = p[0],ymin = p[1],ymax = p[1];
-	do
-	  {//while not return to the original
-	    for(int i=0;i <8;i++)
-	      {
-		direction = (params::iter[i]+direction) %8;//get direction
-		//*--------------> todo: replace with special ticket for the border
-		if ( output(np + params::dp[direction]) and output(np + params::dp[(direction+1)%8]) == 0
-		     and output.domain().has(np + params::dp[(direction+1)%8]))
-		  {//if that point is checked and its next point on the left isn't, it is our next point
-			lap += laplacian(np + params::dp[(direction+1)%8]); // CODE0
-		    np=np+params::dp[direction];// move to next point
-		    bord.push_back(np);//add next point to return vector
-		    grad+=gradient(np);//increase gradient
-		    count++;//increase counter
-			xmin = xmin>np[0]? np[0]: xmin;
-		    xmax = xmax>np[0]? xmax : np[0];
-		    ymin = ymin>np[1]? np[1]: ymin;
-		    ymax = ymax>np[1]? ymax : np[1];
-			//turn += i<4?i*500:(i-4)*500; CODE7
-			//lapPoints.push_back(laplacian(np)); // for sorted vector of laplacian count % CODE1
-			//lapPoints.push_back(laplacian(np + params::dp[(direction+1)%8]));
-		    break;//found, no need further check
-		  }
-	      }
-	  }while(np!=p);
+	  namespace old{
+		template <typename I, typename V>
+		float followEdge(const point2d& p,const image2d<unsigned int>& output,const image2d<I>& gradient,const image2d< V >& laplacian,vector<point2d>& bord,
+				  unsigned& count,float& lap, boundingBox& box2d) // CODE1 last param lap //CODE7 turn ,float& turn
+	   {
+		 count =100;
+		 bord.push_back(p);
+		 lap = (255);
+		 box2d = boundingBox(0,0,100,100);
+		 return 1000;
+		 
+	   /*
+		*Follow the contour of component and return the gradient moyenne
+		*at these points and number of point in the edge
+		*/	
+	   count=0;
+	   //turn = 0; CODE7
+	   point2d np=p;
+	   float grad = 0;
+	   vector < int > lapPoints; //CODE1
+	   int direction =0;
+	   short xmin = p[0] ,xmax = p[0],ymin = p[1],ymax = p[1];
+	   do
+		 {//while not return to the original
+		   for(int i=0;i <8;i++)
+			 {
+		   direction = (params::iter[i]+direction) %8;//get direction
+		   //*--------------> todo: replace with special ticket for the border
+		   if ( output(np + params::dp[direction]) and output(np + params::dp[(direction+1)%8]) == 0
+				and output.domain().has(np + params::dp[(direction+1)%8]))
+			 {//if that point is checked and its next point on the left isn't, it is our next point
+			   lap += laplacian(np + params::dp[(direction+1)%8]); // CODE0
+			   np=np+params::dp[direction];// move to next point
+			   bord.push_back(np);//add next point to return vector
+			   grad+=gradient(np);//increase gradient
+			   count++;//increase counter
+			   xmin = xmin>np[0]? np[0]: xmin;
+			   xmax = xmax>np[0]? xmax : np[0];
+			   ymin = ymin>np[1]? np[1]: ymin;
+			   ymax = ymax>np[1]? ymax : np[1];
+			   //turn += i<4?i*500:(i-4)*500; CODE7
+			   //lapPoints.push_back(laplacian(np)); // for sorted vector of laplacian count % CODE1
+			   //lapPoints.push_back(laplacian(np + params::dp[(direction+1)%8]));
+			   break;//found, no need further check
+			 }
+			 }
+		 }while(np!=p);
+   
+	   //if(count>params::area)
+	   //{
+	   // ********************************************
+	   //sort(lapPoints.begin(),lapPoints.end());
+	   //for(std::vector<int>::iterator j=lapPoints.begin()+count*0.9;j!=lapPoints.end();++j)
+		 //lap += *j;
+	   //lap = lap/(count*0.1);
+	   //********************************************* //CODE1
+	   box2d = boundingBox(xmin+1,xmax-1,ymin+1,ymax-1);
+	   //turn = turn/count; CODE7
+	   return grad/count;
+	   /*}
+		else
+	   {
+		 lap = 0;
+		 return 0;
+	   }*/ //CODE1
+	   }
+	  }
+      template <typename I, typename V>
+	  float followEdge(const point2d& p,const image2d<I>& gradient,const image2d< V >& laplacian, image2d<value::int_u8>& marker ,vector<point2d>& bord,
+				  unsigned& count,float& lap, boundingBox& box2d) // CODE1 last param lap //CODE7 turn ,float& turn
+	   {	 
+	   /*
+		*Follow the contour of component and return the gradient moyenne
+		*at these points and number of point in the edge
+		*/
 
-	//if(count>params::area)
-	//{
-	// ********************************************
-	//sort(lapPoints.begin(),lapPoints.end());
-	//for(std::vector<int>::iterator j=lapPoints.begin()+count*0.9;j!=lapPoints.end();++j)
-	  //lap += *j;
-	//lap = lap/(count*0.1);
-	//********************************************* //CODE1
-	box2d = boundingBox(xmin+1,xmax-1,ymin+1,ymax-1);
-	//turn = turn/count; CODE7
-	return grad/count;
-	/*}
-	 else
-	{
-	  lap = 0;
-	  return 0;
-	}*/ //CODE1
-    }
+
+	  count=0;
+	  //turn = 0; CODE7
+	  point2d np=p;
+	  float grad = 0;
+	  vector < int > lapPoints; //CODE1
+	  short xmin = p[0] ,xmax = p[0],ymin = p[1],ymax = p[1];
+	  mln_niter_(neighb2d) n(c4(),np);
+	  p_queue_fast<point2d> Q;
+	  Q.push(p);
+	  while(not Q.empty())
+	    {
+		  np = Q.pop_front();
+		  
+
+		//if that point is checked and its next point on the left isn't, it is our next point
+		  lap += laplacian(np); // CODE0
+		  bord.push_back(np);//add next point to return vector
+		  grad+=gradient(np);//increase gradient
+		  count++;//increase counter
+		  xmin = xmin>np[0]? np[0]: xmin;
+		  xmax = xmax>np[0]? xmax : np[0];
+		  ymin = ymin>np[1]? np[1]: ymin;
+		  ymax = ymax>np[1]? ymax : np[1];
+		  for_all(n)
+			if(marker.domain().has(n) and marker(n)==1 )
+			  {	Q.push(n);
+				marker(n)=2;
+			  }
+		  
+		}
+	   
+	   box2d = boundingBox(xmin,xmax,ymin,ymax);
+		
+	   return grad/count;
+	   }
+	  
       
       template <typename I,typename V, typename K >    
-      inline void decision(V gradient, I output,K input, float gradThresHold,point2d p, tos& tree,bool& bounding_box_count_flag,
+      inline void decision(V gradient, I output,K input,image2d<value::int_u8>& marker, float gradThresHold,point2d p, tos& tree,bool& bounding_box_count_flag,
 			   unsigned& level, unsigned& current)//short int& x1,short int& x2,short int& y1,short int& y2) //, vector< vector<int> > lapContainer) //CODE2vector<unsigned>& count
       {
 	/*
@@ -300,7 +356,9 @@ namespace mln{
 	  {
 		vector<point2d> bord;
 	    //point arrive here must be a new point, at the top left most.
-	    float grad =followEdge(p+dpoint2d(0,-1),output,gradient,input,bord,contourSize,lap,box); // CODE7 ,turn); 
+	    //float grad =old::followEdge(p+dpoint2d(0,-1),output,gradient,input,bord,contourSize,lap,box); // CODE7 ,turn);
+		float grad =followEdge(p,gradient,input,marker,bord,contourSize,lap,box); // CODE7 ,turn);
+		//std::cout<<"grad = "<<grad<<" box.width= "<<box.width<<endl;
 	    if(grad >gradThresHold and contourSize>params::area
 		   and box.width > params::minWidth
 		   and box.height > params::minHeight
@@ -322,14 +380,14 @@ namespace mln{
 			//x1=p[0];x2=p[0];y1=p[1];y2=p[1];
 			
 			current=++level;  //increase counter start of region		
-			tree.parent_array.push_back(output(p+dpoint2d(-1,-1))); //mark parenthood
+			tree.parent_array.push_back(output(p+dpoint2d(-1,0))); //mark parenthood
 			tree.startPoint.push_back(p); //for debug, mark start points
 	      }
 	    else
 	      {
-		current=output(p+dpoint2d(-1,-1)); //merge with upper level
+		current=output(p+dpoint2d(0,-1)); //merge with upper level
 		bounding_box_count_flag =false;
-
+		/*
 		if(box.width <= params::minWidth or box.height<= params::minHeight)
 		  tree.removed1.push_back(bord);
 		else if(contourSize<=params::area)
@@ -340,6 +398,7 @@ namespace mln{
 		  tree.removedBorder.push_back(bord);
 		//if(turn>200)
 		  //tree.removedTurn.push_back(bord);  //CODE7
+		  */
 	      }
 	  }
 	else
@@ -355,7 +414,18 @@ namespace mln{
 	  }
       }
     }
-    
+	template <typename V, typename I>
+    image2d<value::int_u8> update(const I& output2,const V&  output,unsigned nLabels)
+	{
+	  image2d<value::int_u8> outputout(output.domain());
+      mln_piter_(box2d) p(output.domain());
+      for_all(p)
+      {
+		outputout(p)=output(p)*255/nLabels;
+	  }
+	  return outputout;
+	};
+	
     template <typename I,typename V >
     image2d<unsigned int> labeling(const image2d<V >& image,const image2d< I >& input,const image2d< V >& gradient,
 				   float gradThresHold,tos& tree)
@@ -365,9 +435,20 @@ namespace mln{
        *the upper component, initial color (average gray level), area count and bounding box counting
        */
 	  
+	  /*test
+	   *--------------------------------------------------------------------------*/
+	  unsigned counterTest = 0;
+	  stringstream ss;
+	  string name;
+	  image2d<value::int_u8> output2(input.domain());
+	  /*test
+	   *--------------------------------------------------------------------------*/
+	  
       //init of output
       image2d<unsigned int> output(input.domain());
-      data::fill(output,0); 
+	  image2d<value::int_u8> marker(input.domain());
+      data::fill(output,0);
+	  data::fill(marker,0);
       //init of parenthood vector
       tree.parent_array.push_back(1);
       //init of bounding box counting process
@@ -381,8 +462,9 @@ namespace mln{
       p_queue_fast<point2d> Q;
       //tempo point
       point2d q;
-      //neighbor iteration
-      mln_niter_(neighb2d) n(c4(),q); 
+	  mln_niter_(neighb2d) n;
+	  mln_niter_(neighb2d) n1(c4(),q);
+	  mln_niter_(neighb2d) n2(c8(),q);
       //ticket management
       unsigned level=0,current;
       //iter (slow)
@@ -392,65 +474,93 @@ namespace mln{
 	//if this point has been processed in side de queue
 	if(output(p))  continue;
 	//get the decision
-	internal::decision(gradient,output,input,gradThresHold,p,tree,bounding_box_count_flag,
+	internal::decision(gradient,output,input,marker,gradThresHold,p,tree,bounding_box_count_flag,
 			   level,current);//,x1,x2, y1,y2);//,lapContainer);  //CODE2 count  
 	//mark the first point
 	output(p)=current;
+	//neighbor iteration
+	mln_niter_(neighb2d) n(c4(),q);
 	//get the sign of region
 	sign_flag = input(p)>0;
 	//start of region processing
 	Q.push(p); 
-      
+ 
+	//debug::println(marker); 
 	while(not Q.empty())
 	  {
-	    q = Q.pop_front();
-	    for_all(n)
-	      if( input.domain().has(n) and not output(n) and ( sign_flag == (input(n) > 0) or input(n) == 0 ) ) 
-		//if the neighbor is inside the image and it does not belong to any region and its sign is the same or it is null
+	  q = Q.pop_front();
+		if(marker(q))
 		{
-		  if (bounding_box_count_flag)
-		    {
-		      //x1 = min(x1,n[0]);
-		      //x2 = max(x2,n[0]);
-		      //y1 = min(y1,n[1]);
-		      //y2 = max(y2,n[1]);
-			  //lapVector.push_back(input(n));//CODE3
-			  lapMax = sign_flag? (lapMax<input(n)?input(n):lapMax) : (lapMax<input(n)?lapMax:input(n));
-		    }
-		  //color and area count
-		  tree.color[current-1] += image(n);
-		  /*if(input(n)>10 or input(n)<10)
-			{
-			  //tree.lap[current-1] +=input(n); //CODE2
-			  //++count[current -1 ];
-			}*/
-		  ++tree.area[current-1];
-		  //add it to new region
-		  output(n)=current;
-		  //add its neighbors to queue
-		  Q.push(n);
+		  n=n1;
 		}
-	  }//end of while
-	/*if (bounding_box_count_flag)
-	  {//CODE3
-		std::sort(lapVector.begin(),lapVector.end());
-    	if(lapVector[tree.area[current-1]/2]>0)
-		  for(std::vector<float>::iterator j=lapVector.begin() + tree.area[current-1]*0.90;j!=lapVector.end();++j)
-		    tree.lap[current-1] += *j;
 		else
-		  for(std::vector<float>::iterator j=lapVector.begin() ;j!=lapVector.begin() + tree.area[current-1]*0.10;++j)
-			tree.lap[current-1] += *j;			
-		tree.lap[current-1] = tree.lap[current-1]/(tree.area[current-1]*0.10);	  
-		lapVector.clear();
-		*/
-		if (bounding_box_count_flag)
-		  tree.lap[current-1] = lapMax>0?lapMax:-lapMax;
+		{
+		  n=n2;
+		  //cout<<"got here --------------------"<<endl;
+		  //debug::println(output);			  
+		}
+		
+	  /*test
+	   //*--------------------------------------------------------------------------
+		ss.str("");
+		ss.clear();
+		ss<<"output"<<counterTest<<".png";
+		name = ss.str();
+		io::magick::save(update(output,output, level),name);
+		counterTest++;
+	  /*test
+	   *--------------------------------------------------------------------------*/		
+	    
+		//neighbor iteration
+	    for_all(n)
+		  if( input.domain().has(n) )
+		  {
+			if(not output(n))
+			{
+
+			   if ( sign_flag == (input(n) > 0) or input(n) == 0 ) 
+				//if the neighbor is inside the image and it does not belong to any region and its sign is the same or it is null
+				{
+				  if (bounding_box_count_flag)
+					{
+					  lapMax = sign_flag? (lapMax<input(n)?input(n):lapMax) : (lapMax<input(n)?lapMax:input(n));
+					}
+				  //color and area count
+				  tree.color[current-1] += image(n);
+				  ++tree.area[current-1];
+				  //add it to new region
+				  output(n)=current;
+				  //add its neighbors to queue
+				  Q.push(n);
+				}
+				else
+				{
+				  marker(n) = 1;
+				}
+			}
+		  }
+	  
+	  }//end of while
+//		if (bounding_box_count_flag)
+//		  tree.lap[current-1] = lapMax>0?lapMax:-lapMax;
+
+		//cout<<"level = "<<level<<endl;
+	  /*test
+	   //*--------------------------------------------------------------------------
+		ss.str("");
+		ss.clear();
+		ss<<"Bord"<<counterTest<<".png";
+		name = ss.str();
+		io::magick::save(update(marker,marker, 2),name);
+		//counterTest++;
+	  /*test
+	   *--------------------------------------------------------------------------*/
 	  
       }//end of for_all
-	  
+	  /*
       //tree.boxes.push_back(boundingBox(x1,x2,y1,y2));//add the last bouding box
       //std::cout<<level<<" "<<tree.boxes.size();
-      tree.nLabels = level; // return number of regions
+      
       for(int i =0;i<level;i++) //return the average gray level
 	  {
 		tree.color[i]=tree.color[i]/tree.area[i];
@@ -478,6 +588,10 @@ namespace mln{
 		//std::cout<<tree.lambda[i]<<endl;
 		tree.lambda[i]=tree.lambda[i]/max;
 	  }
+	  */
+	  tree.nLabels = level; // return number of regions
+	  //cout<<"down here"<<endl;
+	  
       return output;
     }
 
@@ -557,7 +671,7 @@ namespace mln{
 			  unsigned node,const vector<unsigned>& left, const vector<unsigned>& right,bool direction)
       {
 	bool found=false;
-	cout<<node<<" "<<(right[node] and node+2 == left[right[node]-2])<<" "<<(left[node] and node+2 == right[left[node]-2])<<" "; 
+	//cout<<node<<" "<<(right[node] and node+2 == left[right[node]-2])<<" "<<(left[node] and node+2 == right[left[node]-2])<<" "; 
 	if(direction)
 	  {
 	    if (right[node] and node+2 == left[right[node]-2])
@@ -879,17 +993,6 @@ namespace mln{
 	vector<box2d> boxes;
 	//to check if component has been proceed
 	vector<bool> queue(tree.nLabels,true);
-	/************************************** Average of laplacian, used as a thresHold
-		float pAvg=0,nAvg=0;
-		unsigned countP=0,countN=0;
-		for(std::vector<float>::iterator j=tree.lap.begin();j!=tree.lap.end();++j)
-		if (*j>0)
-		  {pAvg+=*j;countP+=1;}
-		else
-		  {nAvg+=*j;countN+=1;}
-		pAvg=pAvg/countP;
-		nAvg=nAvg/countN;*/
-	//remove some node **************************************************
 	for(int node = tree.nLabels;node>0;node--)
 	  {
 	    //ocupation and ratio

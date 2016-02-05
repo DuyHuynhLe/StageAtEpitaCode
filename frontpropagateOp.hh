@@ -406,6 +406,7 @@ namespace mln{
 	//if this point has been processed in side de queue
 	if(input.element(p) == 300 or output.element(p))  continue;
 	//get the decision
+
 	internal::decision(gradient,output,input,gradThresHold,output.point_at_offset(p),tree,bounding_box_count_flag,
 			   level,current);//,x1,x2, y1,y2);//,lapContainer);  //CODE2 count  
 	//mark the first point
@@ -574,7 +575,7 @@ namespace mln{
 			  unsigned node,const vector<unsigned>& left, const vector<unsigned>& right,bool direction)
       {
 	bool found=false;
-	cout<<node<<" "<<(right[node] and node+2 == left[right[node]-2])<<" "<<(left[node] and node+2 == right[left[node]-2])<<" "; 
+	//cout<<node<<" "<<(right[node] and node+2 == left[right[node]-2])<<" "<<(left[node] and node+2 == right[left[node]-2])<<" "; 
 	if(direction)
 	  {
 	    if (right[node] and node+2 == left[right[node]-2])
