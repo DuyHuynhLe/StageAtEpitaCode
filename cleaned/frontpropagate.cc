@@ -38,6 +38,7 @@
 
 
 #include "frontpropagate.hh"
+#include "grouping.hh"
 #include "display.hh"
 
 #define color 1
@@ -71,20 +72,7 @@ int main(int argc, char* argv[])
   image2d<value::int_u8> input = tos::transformBnW(inputrgb);
   border::thickness = 1;
   std::cout <<" input and convert "<<t4.stop() * 1000. << " ms" << std::endl;
-  //cout<<"input"<<endl;
-  //debug::println(input);
-  //cout<<"\n\n\n\n\n\n"<<endl;
-  
-  //image2d<value::int_u8> input_blur;
-  //blur out the image
-  //if(atof(argv[13]))
-    //input_blur = linear::gaussian(input, atof(argv[13]));
-  //input = input_blur;
-  
-  //io::magick::save(input,argv[14]);
-  //io::magick::save(tos::immerse2(input),argv[14]);
-  //*---> Laplacian 
-  //create structure element
+
   t4.reset();
   t4.start();
   win::rectangle2d lapw( atoi(argv[2]),atoi(argv[2]));
@@ -93,14 +81,16 @@ int main(int argc, char* argv[])
 
   //Calculate Laplacian
   morpho::laplacian(input, lapw, lap);
-    //save the laplacian
-  display::laplacian_colorization(lap,argv[4]);
+
+  //display::laplacian_colorization(lap,argv[4]);
+  //display::laplacian_BlackNWhite(lap,argv[4])
+  
   //Calculate gradient
   /*************************************
   image2d<value::int_u8> input_blur = linear::gaussian(input, atof(argv[13]));
   //***********************************/
   image2d<value::int_u8> grad = morpho::gradient(input,gradw);
-  io::magick::save(grad,argv[14]);
+  //io::magick::save(grad,argv[14]);
   std::cout <<"lap and grad "<<t4.stop() * 1000. << " ms" << std::endl;
   t4.reset();
   t4.start();
@@ -110,15 +100,8 @@ int main(int argc, char* argv[])
   lap = tos::add_border(lap);
   grad = tos::add_border(grad);
   /*-----------------------------------------------------*/
-  //arith::times_cst(input,2,input);//2*laplacian to make sure input is pair this input will be used for average gray level calculation 
   params::laplacianThreshold=atoi(argv[6]);
-  //image2d<unsigned int> output_4 = tos::labeling(tos::immerse2(input),lap,grad,30,treeOfShape);//replace 30 = atof(argv[6]) (gradThresHold)
-  //cout<<grad.offset_of_point(grad.domain().pmin())<<endl;
-  //cout<<lap.offset_of_point(lap.domain().pmin())<<endl;
-  //cout<<input.offset_of_point(input.domain().pmin())<<endl;
-  //cout<<"end of test 1"<<endl;
-  
-  //image2d<value::int_u8> inputImmersed =tos::immerse2(input);
+
   std::cout <<"Immersed "<<t4.stop() * 1000. << " ms" << std::endl;
 
   t5.start();
@@ -142,28 +125,16 @@ int main(int argc, char* argv[])
   
   if(atoi(argv[10]) and atoi(argv[11]) )
     {
-      display::box_on_image(inputrgb,treeOfShape,argv[12]);
+      //display::box_on_image(inputrgb,treeOfShape,argv[12]);
     }
   //displace the labels with different color with color labels
   
   
-  display::saveGT(treeOfShape,argv[15]);
+  //display::saveGT(treeOfShape,argv[15]);
   
-  #if color
-    display::label_colorization(output_4,argv[5],treeOfShape,atoi(argv[8]),atoi(argv[9]),atoi(argv[10]));
-  #endif
-  #if gradi
-  //display::label_colorization(output_4,argv[5],treeOfShape,atoi(argv[8]),atoi(argv[9]),atoi(argv[10]),grad);
-  #endif
-  #if black
-  //display::label_colorizationref(output_4,argv[5],treeOfShape,atoi(argv[8]),atoi(argv[9]),atoi(argv[10]),lap);
-  #endif
-  
-        
-  //io::pbm::save(tos::binarization(output_4,treeOfShape,3),argv[7]);
-  //for(int i =0;i<treeOfShape.contourSize.size();i++)
-  //  cout<<treeOfShape.boxes[i].center[1]<<" "<<treeOfShape.boxes[i].height<<" "<<treeOfShape.boxes[i].width<<endl;
-  //  cout<<endl;
+
+  //display::label_colorization(output_4,argv[5],treeOfShape,atoi(argv[8]),atoi(argv[9]),atoi(argv[10]));
+
   
   //cout<<treeOfShape.lambda.size()<<" "<<treeOfShape.nLabels<<" "<<treeOfShape.border.size()<<endl;
   std::cout << t2.stop() * 1000. << " ms" << std::endl;

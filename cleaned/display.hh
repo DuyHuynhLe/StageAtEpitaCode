@@ -60,6 +60,25 @@ namespace mln{
       io::magick::save(output,filename);
 
     }
+    
+    template<typename I>
+    void laplacian_BlackNWhite(const I image, char* filename)
+    {
+      /*
+       * color the laplacian red = negatif, blue = true zero, green = positif
+       */	  
+      mln_piter_(box2d) p(image.domain());
+      int max = max_abs(image);
+      image2d<value::int_u8> output(image.domain());
+      for_all(p)
+      {
+	if(image(p)<0) output(p) =128+value::int_u8(image(p))*128/max;
+	else if(image(p)>0) output(p) = 128+ value::int_u8(image(p))*127/max;
+	else output(p) = 128;
+      }
+      io::magick::save(output,filename);
+
+    }    
 	
     template<typename I>
     void laplacian_colorizationNotDependValue(const I image, char* filename)
