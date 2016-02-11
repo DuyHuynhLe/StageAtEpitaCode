@@ -2,6 +2,7 @@
 /*
 Note: checking the laplacian of a region. It should be strong to be keep.
 test average of only the strongest point
+
 * Tested: Laplacian on contour approach 1: CODE0
 *Tested: Laplacian thresHolding: on contour: not really impressive CODE1.
 *Tested: Laplacian on whole region CODE2 different thresHold
@@ -73,7 +74,7 @@ namespace mln{
 	   }
 	  
       
-      template <typename I,typename V, typename K >    
+template <typename I,typename V, typename K >    
       inline void decision(V gradient, I output,K input,image2d<value::int_u8>& marker, float gradThresHold,point2d p, tos& tree,bool& bounding_box_count_flag,
 			   unsigned& level, unsigned& current)//short int& x1,short int& x2,short int& y1,short int& y2) //, vector< vector<int> > lapContainer) //CODE2vector<unsigned>& count
       {
@@ -155,20 +156,21 @@ namespace mln{
        *the upper component, initial color (average gray level), area count and bounding box counting
        */
 	  
-	  /*test
-	   *--------------------------------------------------------------------------*/
-	  unsigned counterTest = 0;
-	  stringstream ss;
-	  string name;
-	  image2d<value::int_u8> output2(input.domain());
-	  /*test
-	   *--------------------------------------------------------------------------*/
-	  
+      const unsigned N = input.nelements(); // pixels, including those of the border
+	    
       //init of output
       image2d<unsigned int> output(input.domain());
+      initialize(output, input); // guaranty the same structure (border thickness...)
+      
+      //init of marker (use to mark contour points)
 	  image2d<value::int_u8> marker(input.domain());
+      initialize(marker, input); // guaranty the same structure (border thickness...)
+      
       data::fill(output,0);
 	  data::fill(marker,0);
+      border::fill(marker, 300); // so that borders stop the queue-based propagations!	
+      
+      
       //init of parenthood vector
       tree.parent_array.push_back(1);
       //init of bounding box counting process
@@ -178,30 +180,31 @@ namespace mln{
 	  float lapMax = 0;
       //to check the sign
       bool sign_flag;
+
       //processing queue
-      p_queue_fast<point2d> Q;
+      p_queue_fast<unsigned> Q;
       //tempo point
-      point2d q;
-	  mln_niter_(neighb2d) n;
-	  mln_niter_(neighb2d) n1(c4(),q);
-	  mln_niter_(neighb2d) n2(c8(),q);
+      unsigned q,n;
+      //neighbor iteration
+	  unsigned n_nbh;
+	  mln::util::array<int> dp4 = offsets_wrt(input, c4().win());
+	  mln::util::array<int> dp8 = offsets_wrt(input, c8().win());      
+      
       //ticket management
       unsigned level=0,current;
       //iter (slow)
       mln_piter_(box2d) p(input.domain());
-      for_all(p)
+      for (unsigned p = 0; p < N; ++p) // p is now an "unsigned"
       {
 	//if this point has been processed in side de queue
-	if(output(p))  continue;
+	if(marker.element(p) == 300 or output.element(p))  continue;
 	//get the decision
-	internal::decision(gradient,output,input,marker,gradThresHold,p,tree,bounding_box_count_flag,
+	internal::decision(gradient,output,input,marker,gradThresHold,output.point_at_offset(p),tree,bounding_box_count_flag,
 			   level,current);//,x1,x2, y1,y2);//,lapContainer);  //CODE2 count  
 	//mark the first point
-	output(p)=current;
-	//neighbor iteration
-	mln_niter_(neighb2d) n(c4(),q);
+	output.element(p)=current;
 	//get the sign of region
-	sign_flag = input(p)>0;
+	sign_flag = input.element(p)>0;
 	//start of region processing
 	Q.push(p); 
  
@@ -209,47 +212,48 @@ namespace mln{
 	while(not Q.empty())
 	  {
 	  q = Q.pop_front();
-		if(marker(q))
-		{
-		  n=n1;
-		}
+		if(marker.element(q))
+          n_nbh = 4;
 		else
-		{
-		  n=n2;
-		  //cout<<"got here --------------------"<<endl;
-		  //debug::println(output);			  
-		}    
+          n_nbh = 8;
+          
 		//neighbor iteration
-	    for_all(n)
-		  if( input.domain().has(n) )
-		  {
-			if(not output(n))
-			{
-
-			   if ( sign_flag == (input(n) > 0) or input(n) == 0 ) 
-				//if the neighbor is inside the image and it does not belong to any region and its sign is the same or it is null
-				{
-				  if (bounding_box_count_flag)
-					{
-					  lapMax = sign_flag? (lapMax<input(n)?input(n):lapMax) : (lapMax<input(n)?lapMax:input(n));
-					}
-				  //color and area count
-				  tree.color[current-1] += image(n);
-				  ++tree.area[current-1];
-				  //add it to new region
-				  output(n)=current;
-				  //add its neighbors to queue
-				  Q.push(n);
-				}
-				else
-				{
-				  marker(n) = 1;
-				}
-			}
-		  }
-	  
+	    for (unsigned iNbh = 0; iNbh < n_nbh; ++iNbh)
+        {
+          if(q<=dp4[3]) continue;
+            
+          if(marker.element(q))
+            {n = q + dp4[iNbh]; //normal, we use c4
+            }
+          else
+            {n = q + dp8[iNbh]; //on the border, we use c8
+            }
+            if( marker.element(n) != 300) continue;
+            
+			if( not output.element(n) and ( sign_flag == (input.element(n)> 0) or input.element(n) == 0 ) ) 
+		  //if the neighbor is inside the image and it does not belong to any region and its sign is the same or it is null
+            { 
+              if (bounding_box_count_flag)
+			  {
+				lapMax = sign_flag? (lapMax<input.element(n)?input.element(n):lapMax) : (lapMax<input.element(n)?lapMax:input.element(n));
+			  }
+              //color and area count
+              //cout<<"here "<< current <<" "<<level<<endl;
+              tree.color[current-1] += image.element(n);
+              //cout<<"not here"<<endl;
+              ++tree.area[current-1];
+              //add it to new region
+              output.element(n)=current;
+              //add its neighbors to queue
+              Q.push(n);
+             }
+             else
+             {
+               marker.element(n) = 1;
+             }
+        }//end of neighbor searching
+        
 	  }//end of while
-	  
       }//end of for_all
 	  
 	  tree.nLabels = level; // return number of regions

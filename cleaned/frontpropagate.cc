@@ -37,7 +37,7 @@
 #include <mln/util/array.hh>
 
 
-#include "frontpropagate.hh"
+#include "frontpropagateOP.hh"
 #include "grouping.hh"
 #include "display.hh"
 
@@ -70,6 +70,7 @@ int main(int argc, char* argv[])
   image2d<value::rgb8> inputrgb;
   io::magick::load(inputrgb,argv[1]);
   image2d<value::int_u8> input = tos::transformBnW(inputrgb);
+  io::magick::save(input,argv[14]);
   border::thickness = 1;
   std::cout <<" input and convert "<<t4.stop() * 1000. << " ms" << std::endl;
 
@@ -133,7 +134,7 @@ int main(int argc, char* argv[])
   //display::saveGT(treeOfShape,argv[15]);
   
 
-  //display::label_colorization(output_4,argv[5],treeOfShape,atoi(argv[8]),atoi(argv[9]),atoi(argv[10]));
+  display::label_colorization(output_4,argv[5],treeOfShape,atoi(argv[8]),atoi(argv[9]),atoi(argv[10]));
 
   
   //cout<<treeOfShape.lambda.size()<<" "<<treeOfShape.nLabels<<" "<<treeOfShape.border.size()<<endl;
