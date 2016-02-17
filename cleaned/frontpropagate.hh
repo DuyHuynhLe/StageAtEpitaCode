@@ -147,7 +147,7 @@ namespace mln{
     }
 		
     template <typename I,typename V >
-    image2d<unsigned int> labeling(const image2d<V >& image,const image2d< I >& input,const image2d< V >& gradient,
+    image2d<unsigned int> labelling(const image2d<V >& image,const image2d< I >& input,const image2d< V >& gradient,
 				   float gradThresHold,tos& tree)
     {
       /*
@@ -204,7 +204,6 @@ namespace mln{
 	sign_flag = input(p)>0;
 	//start of region processing
 	Q.push(p); 
- 
 	//debug::println(marker); 
 	while(not Q.empty())
 	  {
@@ -256,7 +255,7 @@ namespace mln{
 
 	  
       return output;
-    }//end of labeling
+    }//end of labelling
   
   }
 }
