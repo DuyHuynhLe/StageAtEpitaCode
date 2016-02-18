@@ -52,7 +52,7 @@ void help(char * argv[])
 {
   
   std::cerr << "usage: " << argv[0] << " input.ext Laplace_window gradian_window gradient_thresholding gradient_output.ext ShowContour(1|0) elementBox(1|0) textBox(1|0) textBoxOnOriginalImage(1|0) textBox_On_originalImage.ext GauSigma BlurredImage.ext BoundingBox.txt " << std::endl;
-  std::cerr << "or: " << argv[0] << " input.ext Laplace_window gradian_window gradient_thresholding gradient_output.ext ShowContour(1|0) elementBox(1|0) textBox(1|0) textBoxOnOriginalImage(1|0) textBox_On_originalImage.ext GauSigma BlurredImage.ext BoundingBox.txt minContour minWidth minHeight widthHeightRatio heightWidthRatio " << std::endl;
+  std::cerr << "or: " << argv[0] << " input.ext Laplace_window gradian_window gradient_thresholding gradient_output.ext ShowContour(1|0) elementBox(1|0) textBox(1|0) Color_binary(1|0) textBox_On_originalImage.ext GauSigma BlurredImage.ext BoundingBox.txt minContour minWidth minHeight widthHeightRatio heightWidthRatio " << std::endl;
   std::abort();
 
 }
@@ -139,16 +139,16 @@ int main(int argc, char* argv[])
     }
   //get the bounding box and display on original image
   
-  if(atoi(argv[10]) and atoi(argv[11]) )
-    {
-      display::box_on_image(inputrgb,treeOfShape,argv[12]);
-    }
+  display::box_on_image(inputrgb,treeOfShape,argv[12]);
   //displace the labels with different color with color labels
   
   
   display::saveGT(treeOfShape,argv[15]);
   
-  display::label_colorization(output_4,argv[5],treeOfShape,atoi(argv[8]),atoi(argv[9]),atoi(argv[10]));
+  if(atoi(argv[11]))
+  {display::label_colorization(output_4,argv[5],treeOfShape,atoi(argv[8]),atoi(argv[9]),atoi(argv[10]));}
+  else  
+  {display::label_OnlyText(output_4,argv[5],treeOfShape,atoi(argv[8]),atoi(argv[9]),atoi(argv[10]));}
 
   
   //cout<<treeOfShape.lambda.size()<<" "<<treeOfShape.nLabels<<" "<<treeOfShape.border.size()<<endl;
@@ -156,6 +156,7 @@ int main(int argc, char* argv[])
   std::cout << t1.stop() * 1000. << " ms" << std::endl;
   
   std::cout <<"labelling and grouping "<< t5.stop() * 1000. << " ms" << std::endl;
+  std::cout<<treeOfShape.text.size()<<std::endl;
   
 }
 //attention, the tree code lable from 1, but the vector starts from 0

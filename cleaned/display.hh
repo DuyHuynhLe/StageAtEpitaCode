@@ -98,6 +98,38 @@ namespace mln{
 
     }	
 
+       template<typename I>
+    void label_OnlyText(const I image,char* filename,tos::tos tree,bool bord,bool outBox,bool groupText)
+    {
+      /*
+       * color the labeled image, with option to turn on the border of each element (deleted one included)
+       * bounding box of each component and bounding box of grouped component
+       */		  
+      value::rgb8 color[tree.nLabels];
+      unsigned i,j ;
+      //create random colors
+      for(i =0;i<tree.nLabels;i++)
+	{
+	  color[i]=value::rgb8(255 ,255 ,255);
+	}
+      for(i =0;i<tree.text.size();i++)
+	{
+	  //color[tree.text[i]]=value::rgb8( rand() * 255 , rand() * 255 , rand() * 255);
+      color[tree.text[i]]=value::rgb8( 0,0,0);
+      std::cout<<tree.text.size()<<" "<<i<<" "<<tree.text[i]<<std::endl;
+	}    
+    
+      //paste to the output
+      mln_piter_(box2d) p(image.domain());
+      image2d<value::rgb8> output(image.domain());
+      for_all(p)
+      {
+	output(p)=color[image(p)-1];
+      }
+	  
+      io::magick::save(output,filename);
+    }
+	
      
     template<typename I>
     void label_colorization(const I image,char* filename,tos::tos tree,bool bord,bool outBox,bool groupText)
@@ -155,28 +187,25 @@ namespace mln{
 		  output(tree.removedRatio[i][j])=value::rgb8(0,0,255);
 		  
 	  cout<<"removed by contour size "<<tree.removed2.size()<<endl;
-	  cout<<"got here?"<<endl;
+
 	  // for(i=0;i<tree.contourSize.size();i++)
 		//for(j=0;j<tree.removed2[i].size();j++)
 		  //output(tree.removed2[i][j])=value::rgb8(255,255,0);
 		  
 		  		  
 	}
-	cout<<"got here:"<<endl;
+
       //bounding box of each component
       if(outBox)
 	for(int i=0;i<tree.boxes.size();i++)
 	  mln::draw::box(output,tree.boxes[i].box,value::rgb8(255,0,0));
       //bounding box of grouped component
 	  
-	cout<<"here:"<<endl;
+
       if(groupText)
 	for(int i=0;i<tree.boundingBoxes.size();i++)
 	  mln::draw::box(output,tree.boundingBoxes[i],value::rgb8(0,255,0));
-      //for(int i =0;i<tos::debug.size();i++)
-      //output(tos::debug[i])=value::rgb8(255,255,255);
-	cout<<"or here:"<<endl;  
-      label_code(tree.parent_array,color,"label_code.ppm");
+
       io::magick::save(output,filename);
     }
 	

@@ -357,7 +357,7 @@ namespace mln{
     }
     
     template <typename I,typename V >
-    image2d<unsigned int> labeling(const image2d<V >& image,const image2d< I >& input,const image2d< V >& gradient,
+    image2d<unsigned int> labelling(const image2d<V >& image,const image2d< I >& input,const image2d< V >& gradient,
 				   float gradThresHold,tos& tree)
     {
       /*
@@ -485,7 +485,7 @@ namespace mln{
     //*-------------------------------------------------------
     //*-------------------------------------------------------
     //*-------------------------------------------------------
-    image2d<bool> binarization(const image2d<unsigned int>& labeling,tos& tree,int thresHold)
+    image2d<bool> binarization(const image2d<unsigned int>& labelling,tos& tree,int thresHold)
     {
       vector<unsigned int> score = util::scoring(tree);//a table of score(for binarization) of each composant
       vector<unsigned> binary(score.size(),0);
@@ -500,11 +500,11 @@ namespace mln{
 	    binary[i]=1;
 
 	  
-      image2d<bool> output(labeling.domain());
-      mln_piter_(box2d) p(labeling.domain());
+      image2d<bool> output(labelling.domain());
+      mln_piter_(box2d) p(labelling.domain());
       //paste binary value into image
       for_all(p)
-	output(p) = binary[labeling(p)-1];
+	output(p) = binary[labelling(p)-1];
       return output;
     }
 
