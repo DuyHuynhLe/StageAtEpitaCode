@@ -130,6 +130,14 @@ namespace mln{
 	      {
 		current=output(p+dpoint2d(0,-1)); //merge with upper level
 		bounding_box_count_flag =false;
+		if(box.width <= params::minWidth or box.height<= params::minHeight)
+		  tree.removed1.push_back(bord);
+		else if(contourSize<=params::area)
+		  tree.removed2.push_back(bord);
+		else if(box.width >= box.height*params::heightWidthRatio or box.height >= box.width*params::widthHeightRatio)
+		  tree.removedRatio.push_back(bord);
+		else
+		  tree.removedBorder.push_back(bord);        
 	      }
 	  }
 	else

@@ -156,7 +156,7 @@ int main(int argc, char* argv[])
   std::cout << t1.stop() * 1000. << " ms" << std::endl;
   
   std::cout <<"labelling and grouping "<< t5.stop() * 1000. << " ms" << std::endl;
-  std::cout<<treeOfShape.text.size()<<std::endl;
+
   
 }
 //attention, the tree code lable from 1, but the vector starts from 0

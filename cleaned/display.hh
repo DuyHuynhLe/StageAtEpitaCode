@@ -114,17 +114,20 @@ namespace mln{
 	}
       for(i =0;i<tree.text.size();i++)
 	{
-	  //color[tree.text[i]]=value::rgb8( rand() * 255 , rand() * 255 , rand() * 255);
-      color[tree.text[i]]=value::rgb8( 0,0,0);
-      std::cout<<tree.text.size()<<" "<<i<<" "<<tree.text[i]<<std::endl;
+	  color[tree.text[i]]=value::rgb8( rand() * 255 , rand() * 255 , rand() * 255);
+      //color[tree.text[i]]=value::rgb8( 0,0,0);
+
 	}    
     
       //paste to the output
       mln_piter_(box2d) p(image.domain());
-      image2d<value::rgb8> output(image.domain());
+      image2d<value::rgb8> output(image.domain().len(0)-2,image.domain().len(1)-2);
+      point2d n;
       for_all(p)
       {
-	output(p)=color[image(p)-1];
+        n =p+dpoint2d(-1,-1);
+       if (output.domain().has(n) )
+        output(n)=color[image(p)-1];
       }
 	  
       io::magick::save(output,filename);
@@ -188,9 +191,9 @@ namespace mln{
 		  
 	  cout<<"removed by contour size "<<tree.removed2.size()<<endl;
 
-	  // for(i=0;i<tree.contourSize.size();i++)
-		//for(j=0;j<tree.removed2[i].size();j++)
-		  //output(tree.removed2[i][j])=value::rgb8(255,255,0);
+	   for(i=0;i<tree.removed2.size();i++)
+		for(j=0;j<tree.removed2[i].size();j++)
+		  output(tree.removed2[i][j])=value::rgb8(255,255,0);
 		  
 		  		  
 	}
@@ -282,7 +285,7 @@ namespace mln{
       box2d current;
       for(int i=0;i<tree.boundingBoxes.size();i++)
 	{
-	  current = make::box2d(tree.boundingBoxes[i].pmin()[0],tree.boundingBoxes[i].pmin()[1],tree.boundingBoxes[i].pmax()[0],tree.boundingBoxes[i].pmax()[1]);
+	  current = make::box2d(tree.boundingBoxes[i].pmin()[0]-1,tree.boundingBoxes[i].pmin()[1]-1,tree.boundingBoxes[i].pmax()[0]-1,tree.boundingBoxes[i].pmax()[1]-1);
 	  mln::draw::box (image,current,value::rgb8(255,0,0));
 	}
       io::magick::save(image,filename);
@@ -296,6 +299,7 @@ namespace mln{
 		for(int i = 0;i<tree.boundingBoxes.size();i++)
 		  outFile<<tree.boundingBoxes[i].pmin()[1]<<","<<tree.boundingBoxes[i].pmin()[0]<<","<<tree.boundingBoxes[i].pmax()[1]<<","<<tree.boundingBoxes[i].pmax()[0]<<"\r\n";
 		outFile.close();
+        //One pixels border
 	  }
 	}
 	
