@@ -239,7 +239,7 @@ namespace mln{
 		    box = getBoundingBox(box,tree.boxes[node].box,tree.boxes[i].box);
 		    //joint neighbors
 		    neighbors.push_back(i);
-            text.push_back(i+1);
+            text.push_back(i);
 		  }	
 	      }
 	  }
@@ -337,6 +337,7 @@ namespace mln{
 	      //clear queue
 	      queue[node]=false;
           std::vector<unsigned> text;
+          text.push_back(node);
 	      //check color
 	      //if(not tree.isEquivalent(tree.color[node],tree.color[tree.getParentIndex(node)],params::score))
 
@@ -345,7 +346,6 @@ namespace mln{
 		  //add it
           {
             boxes.push_back(box);
-            std::cout<<"text size = "<< text.size()<<std::endl;
             tree.text.insert(tree.text.end(),text.begin(),text.end());
           }
 

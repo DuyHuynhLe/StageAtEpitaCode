@@ -11,7 +11,7 @@
       unsigned boxSize = 25; //minimum area of bounding box to be kept (width * height)
       unsigned area = 7;// perimeter minimum of a component to be kept old =30
       float laplacianThreshold = 0; //thresHold of 25% strongest point of laplacian of a region
-      
+      float regularisation = 0;
       unsigned widthHeightRatio = 10;
       unsigned heightWidthRatio = 5;
       unsigned minWidth = 1;

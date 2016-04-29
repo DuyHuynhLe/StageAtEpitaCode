@@ -1,14 +1,3 @@
-/*
- *Big change: normalisation the laplacian before continue
- *Big change: Laplacian is float
- */
-
-/*
- * CODE1 Displace the laplacian of different value
- *
- *
- */
-
 #include <iostream>
 #include <mln/core/image/image2d.hh>
 
@@ -47,7 +36,13 @@
 #define gradi 0
 /*
  i=5;./StageAtEpitaCode/trunk/frontpropagate ~/Documents/ima/test_set/img_${i}.jpg 11 11 0Testoutput/lap${i}.ppm 0Testoutput/lab${i}.png 30 0Testoutput/bin${i}.pbm 0 0 1 1 0Testoutput/${i}.png 3.1 0Testoutput/Gau${i}.png 0Testoutput/gt.txt
+
+g++ -I. -I ~/local/include/ frontpropagate.cc -o frontpropagate -lMagick++ -w -DNDEBUG -O2
+
+./StageAtEpitaCode/trunk/noInterpolate/frontpropagate ~/Documents/1data/ima/test_set/img_${i}.jpg 11 11 test/lap${i}.png test/lab${i}.png 20 test/bin${i}.png 1 0 1 1 test/${i}.png 0 test/${i}.png test/res_img_${i}.txt test/wlap${i}.png
  */
+
+
 void help(char * argv[])
 {
   
@@ -64,7 +59,7 @@ int main(int argc, char* argv[])
   if (argc < 16 or argc >21)
     help(argv);
   
- if (argc ==22)
+  if (argc ==22)
     {
       params::area = atoi(argv[17]);
       params::minWidth = atoi(argv[18]);
@@ -72,12 +67,15 @@ int main(int argc, char* argv[])
       params::widthHeightRatio = atoi(argv[20]);
       params::heightWidthRatio = atoi(argv[21]);
     }
+    
+  //params::regularisation = atof(argv[6]); //testline
 
   util::timer t1,t2,t4,t5;
   t1.start();t2.start();t4.start();
   //input
   
   image2d<value::rgb8> inputrgb;
+  border::thickness = 1;
   io::magick::load(inputrgb,argv[1]);
   image2d<value::int_u8> input = tos::transformBnW(inputrgb);
     /*************************************/
@@ -89,7 +87,7 @@ int main(int argc, char* argv[])
 
   //***********************************/
   //
-  border::thickness = 1;
+
   std::cout <<" input and convert "<<t4.stop() * 1000. << " ms" << std::endl;
 
   t4.reset();
@@ -104,7 +102,7 @@ int main(int argc, char* argv[])
   //display::laplacian_BlackNWhite(lap,argv[4])
   
   //Calculate gradient
-
+  std::cout<<"first step \n";
   image2d<value::int_u8> grad = morpho::gradient(input,gradw);
   io::magick::save(grad,argv[7]);
   std::cout <<"lap and grad "<<t4.stop() * 1000. << " ms" << std::endl;
@@ -125,9 +123,10 @@ int main(int argc, char* argv[])
   tos::tos treeOfShape(lap.nrows()*lap.ncols());
   util::timer t3;
   t3.start();
+  std::cout<<"before labeling \n";
   image2d<unsigned int> output_4 = tos::labelling(input,lap,grad,atof(argv[6]),treeOfShape);//replace 30 = atof(argv[6]) (gradThresHold)
   std::cout <<"outside labelling "<< t3.stop() * 1000. << " ms" << std::endl;
-
+  std::cout<<"labeling succeed \n";
   //get an output
   std::cout<<"number of Labels: "<<treeOfShape.nLabels<<endl;
   std::cout << t1.stop() * 1000. << " ms" << std::endl;
@@ -138,18 +137,16 @@ int main(int argc, char* argv[])
       treeOfShape.boundingBoxes = tos::distance::getRegions(output_4,treeOfShape);
     }
   //get the bounding box and display on original image
-  
+
   display::box_on_image(inputrgb,treeOfShape,argv[12]);
   //displace the labels with different color with color labels
   
-  
   display::saveGT(treeOfShape,argv[15]);
-  
+
   if(atoi(argv[11]))
-  {display::label_colorization(output_4,argv[5],treeOfShape,atoi(argv[8]),atoi(argv[9]),atoi(argv[10]));}
+  {display::label_colorization(output_4,argv[5],argv[16],treeOfShape,atoi(argv[8]),atoi(argv[9]),atoi(argv[10]));}
   else  
   {display::label_colorization(output_4,argv[5],argv[16],treeOfShape,atoi(argv[8]),atoi(argv[9]),atoi(argv[10]));}
-
   
   //cout<<treeOfShape.lambda.size()<<" "<<treeOfShape.nLabels<<" "<<treeOfShape.border.size()<<endl;
   std::cout << t2.stop() * 1000. << " ms" << std::endl;

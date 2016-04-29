@@ -132,7 +132,6 @@ namespace mln{
 	  
       io::magick::save(output,filename);
     }
-	
      
     template<typename I>
     void label_colorization(const I image,char* filename,tos::tos tree,bool bord,bool outBox,bool groupText)
@@ -212,6 +211,106 @@ namespace mln{
       io::magick::save(output,filename);
     }
 	
+    template<typename I>
+    void label_colorization(const I image,char* filename,char* filename2,tos::tos tree,bool bord,bool outBox,bool groupText)
+    {
+      /*
+       * color the labeled image, with option to turn on the border of each element (deleted one included)
+       * bounding box of each component and bounding box of grouped component
+       */		  
+      value::rgb8 color[tree.nLabels];
+      value::rgb8 color2[tree.nLabels];
+      unsigned i,j ;
+      //create random colors
+      for(i =0;i<tree.nLabels;i++)
+	{
+	  color[i]=value::rgb8( rand() * 255 , rand() * 255 , rand() * 255);
+	  //color[i] = value::rgb8(  tree.turn[i]* 255/500 , tree.turn[i]* 255/500 ,  tree.turn[i]* 255/500);
+	}
+    
+    //create black and white image
+      for(i =0;i<tree.nLabels;i++)
+	{
+	  color2[i]=value::rgb8(255 ,255 ,255);
+	}
+      for(i =0;i<tree.text.size();i++)
+	{
+	  color2[tree.text[i]]=color[tree.text[i]];
+	}
+    
+      //paste to the output
+      mln_piter_(box2d) p(image.domain());
+      image2d<value::rgb8> output(image.domain().len(0)-2,image.domain().len(1)-2);
+      image2d<value::rgb8> output2(image.domain().len(0)-2,image.domain().len(1)-2);
+      point2d n;
+      for_all(p)
+      {
+        n =p+dpoint2d(-1,-1);
+       if (output.domain().has(n) )
+       {
+        output(n)=color[image(p)-1];
+        output2(n)=color2[image(p)-1];
+       }
+      }
+	  
+      //center of each box 
+      for(int i=0;i<tree.nLabels;i++)
+	output(tree.boxes[i].center)=value::rgb8(0,0,0);
+      //start point and border
+      if(bord)
+	{
+	  for(i =0;i<tree.nLabels-1;i++)
+	    output(tree.startPoint[i])=value::rgb8(0,0,0);
+	  for(i=0;i<tree.border.size();i++)
+		for(j=0;j<tree.border[i].size();j++)
+	    output(tree.border[i][j])=value::rgb8(255,255,255);
+		
+	  cout<<"removed by grad "<<tree.removedBorder.size()<<endl;
+	  for(i=0;i<tree.removedBorder.size();i++)
+		for(j=0;j<tree.removedBorder[i].size();j++)
+		  output(tree.removedBorder[i][j])=value::rgb8(200,0,0);
+		  
+	  cout<<"removed by size "<<tree.removed1.size()<<endl;
+	  for(i=0;i<tree.removed1.size();i++)
+		for(j=0;j<tree.removed1[i].size();j++)
+		  output(tree.removed1[i][j])=value::rgb8(0,0,0);		  
+		  
+	  cout<<"removed by lap "<<tree.removedLap.size()<<endl; 
+	  for(i=0;i<tree.removedLap.size();i++)
+		for(j=0;j<tree.removedLap[i].size();j++)
+		  output(tree.removedLap[i][j])=value::rgb8(0,tree.removedLapTemp[i]>0?tree.removedLapTemp[i]:-tree.removedLapTemp[i]
+													,tree.removedLapTemp[i]>0?tree.removedLapTemp[i]:-tree.removedLapTemp[i]);
+	  cout<<"removed by ratio "<<tree.removedRatio.size()<<endl; 
+	  for(i=0;i<tree.removedRatio.size();i++)
+		for(j=0;j<tree.removedRatio[i].size();j++)
+		  output(tree.removedRatio[i][j])=value::rgb8(0,0,255);
+		  
+	  cout<<"removed by contour size "<<tree.removed2.size()<<endl;
+
+	   for(i=0;i<tree.removed2.size();i++)
+		for(j=0;j<tree.removed2[i].size();j++)
+		  output(tree.removed2[i][j])=value::rgb8(255,255,0);
+		  
+		  		  
+	}
+
+      //bounding box of each component
+      if(outBox)
+	for(int i=0;i<tree.boxes.size();i++)
+    {
+	  mln::draw::box(output,tree.boxes[i].box,value::rgb8(255,0,0));
+      //bounding box of grouped component
+    } 
+
+      if(groupText)
+	for(int i=0;i<tree.boundingBoxes.size();i++)
+    {
+      box2d current = make::box2d(tree.boundingBoxes[i].pmin()[0]-1,tree.boundingBoxes[i].pmin()[1]-1,tree.boundingBoxes[i].pmax()[0]-1,tree.boundingBoxes[i].pmax()[1]-1);
+      mln::draw::box(output,current,value::rgb8(0,255,0));
+    }
+      io::magick::save(output,filename);
+      io::magick::save(output2,filename2);
+    }
 	
     template<typename I>
     void label_colorization(const I image,char* filename,tos::tos tree,bool bord,bool outBox,bool groupText,image2d<value::int_u8> grad)
@@ -302,6 +401,32 @@ namespace mln{
         //One pixels border
 	  }
 	}
+    void saveGT_format2(tos::tos tree,char* filename)
+    {
+	  ofstream outFile (filename);
+	  if (outFile.is_open())
+	  {
+		for(int i = 0;i<tree.boundingBoxes.size();i++)
+		  outFile<<tree.boundingBoxes[i].pmin()[1]<<","<<tree.boundingBoxes[i].pmin()[0]<<","<<tree.boundingBoxes[i].pmax()[1]<<","<<tree.boundingBoxes[i].pmin()[0]<<","<<tree.boundingBoxes[i].pmax()[1]<<","<<tree.boundingBoxes[i].pmax()[0]<<","<<tree.boundingBoxes[i].pmin()[1]<<","<<tree.boundingBoxes[i].pmax()[0]<<"\r\n";
+		outFile.close();
+        //One pixels border
+	  }
+	}
+    
+    void saveGT_Everything(tos::tos tree,char* filename)
+    {
+	  ofstream outFile (filename);
+	  if (outFile.is_open())
+	  {
+		for(int i = 1;i<tree.boxes.size();i++)
+          //if((tree.boxes[i].box.pmin()[1] and tree.boxes[i].box.pmin()[0] ))
+            //outFile<<tree.boxes[i].box.pmin()[1]-1<<","<<tree.boxes[i].box.pmin()[0]-1<<","<<tree.boxes[i].box.pmax()[1]-1<<","<<tree.boxes[i].box.pmin()[0]-1<<","<<tree.boxes[i].box.pmax()[1]-1<<","<<tree.boxes[i].box.pmax()[0]-1<<","<<tree.boxes[i].box.pmin()[1]-1<<","<<tree.boxes[i].box.pmax()[0]-1<<"\r\n";
+          //else
+            outFile<<tree.boxes[i].box.pmin()[1]<<","<<tree.boxes[i].box.pmin()[0]<<","<<tree.boxes[i].box.pmax()[1]<<","<<tree.boxes[i].box.pmin()[0]<<","<<tree.boxes[i].box.pmax()[1]<<","<<tree.boxes[i].box.pmax()[0]<<","<<tree.boxes[i].box.pmin()[1]<<","<<tree.boxes[i].box.pmax()[0]<<"\r\n";
+		outFile.close();
+        //One pixels border
+	  }
+	}    
 	
   }
 }
