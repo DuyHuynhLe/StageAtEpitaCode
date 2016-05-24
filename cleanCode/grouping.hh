@@ -85,13 +85,12 @@ namespace mln{
 	std::vector<bool> queue(tree.nLabels+1);	
 
 	tree.pruneTree();
-	
 	tree.calculateDistanceFromLeaves();
 	
 	for(unsigned i = 1;i<=tree.nLabels;i++)
 	  queue[i]=tree.nodes[i].isReal;
 	for(unsigned i = 1;i<=tree.nLabels;i++)
-	  if(tree.nodes[i].distance>=1)
+	  if(tree.nodes[i].distance>2)
 	    queue[i]=false;
 
 

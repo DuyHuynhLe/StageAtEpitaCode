@@ -105,47 +105,47 @@ namespace mln{
        * color the labeled image, with option to turn on the border of each element (deleted one included)
        * bounding box of each component and bounding box of grouped component
        */		  
-      value::rgb8 color[tree.nLabels];
-      value::rgb8 color2[tree.nLabels];
+      value::rgb8 color[tree.nLabels+1];
+      value::rgb8 color2[tree.nLabels+1];
       unsigned i,j;
       //create random colors
-      for(i =1;i<=tree.nLabels;i++)
-	{
-	  color[i]=value::rgb8( rand() * 255 , rand() * 255 , rand() * 255);
-	}
+      // for(i =1;i<=tree.nLabels;i++)
+      // 	{
+      // 	  color[i]=value::rgb8( rand() * 255 , rand() * 255 , rand() * 255);
+      // 	}
+      for(unsigned node =1;node<=tree.nLabels;node++)
+      	if(tree.nodes[node].isReal)
+      	  {
+      	    if(tree.nodes[node].isText)
+      	      {
+      	      color[node]= value::rgb8( rand() * 255 , rand() * 255 , rand() * 255 );
+      	      color2[node]=color[node];
+      	      }
+      	    else
+      	      {
+      		color[node]= value::rgb8( rand() * 125 , rand() * 125 , rand() * 125);
+      		color2[node]=value::rgb8(255 ,255 ,255);
+      	      }
+      	  }
+      	else
+      	  {
+      	    color2[node] = color2[tree.nodes[node].parent->label];
+      	    color[node] =  color[tree.nodes[node].parent->label];
+      	  }
+      //create black and white image
       // for(unsigned node =1;node<=tree.nLabels;node++)
       // 	if(tree.nodes[node].isReal)
       // 	  {
       // 	    if(tree.nodes[node].isText)
-      // 	      {
-      // 	      color[node]= value::rgb8( rand() * 255 , rand() * 255 , rand() * 255 );
       // 	      color2[node]=color[node];
-      // 	      }
       // 	    else
-      // 	      {
-      // 		color[node]= value::rgb8( rand() * 125 , rand() * 125 , rand() * 125);
-      // 		olor2[node]=value::rgb8(255 ,255 ,255);
-      // 	      }
+      // 	      color2[node]=value::rgb8(255 ,255 ,255);
       // 	  }
       // 	else
       // 	  {
       // 	    color2[node] = color2[tree.nodes[node].parent->label];
       // 	    color[node] =  color[tree.nodes[node].parent->label];
       // 	  }
-      //create black and white image
-      for(unsigned node =1;node<=tree.nLabels;node++)
-	if(tree.nodes[node].isReal)
-	  {
-	    if(tree.nodes[node].isText)
-	      color2[node]=color[node];
-	    else
-	      color2[node]=value::rgb8(255 ,255 ,255);
-	  }
-	else
-	  {
-	    color2[node] = color2[tree.nodes[node].parent->label];
-	    color[node] =  color[tree.nodes[node].parent->label];
-	  }
 
       //paste to the output
       mln_piter_(box2d) p(image.domain());

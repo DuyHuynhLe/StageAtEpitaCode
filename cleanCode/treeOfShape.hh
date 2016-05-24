@@ -128,8 +128,6 @@ namespace mln{
 	
 	for(unsigned i = 0;i<nodes[node].children.size();i++)
 	  {
-	    //update parent's info
-	    //nodes[node].parent->area += nodes[node].area;
 	    //update parent's child
 	    //add new
 	    nodes[node].parent->children.push_back(nodes[node].children[i]);
